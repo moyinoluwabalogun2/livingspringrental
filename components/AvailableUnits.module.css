@@ -1,0 +1,57 @@
+/* components/AvailableUnits.module.css */
+.units {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.units h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.unitsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.unitCard {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+}
+
+.unitCard:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.unitCard h3 {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+
+.price {
+  color: var(--accent);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.5rem 0;
+}
+
+.price span {
+  font-size: 0.875rem;
+}
+
+.specs {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.specs svg {
+  margin-right: 0.25rem;
+}

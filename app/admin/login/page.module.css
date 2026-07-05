@@ -1,0 +1,155 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.2), transparent 28%),
+    linear-gradient(rgba(7, 17, 31, 0.88), rgba(7, 17, 31, 0.92)),
+    url('https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1800&q=85')
+      center / cover;
+}
+
+.card {
+  width: min(100%, 460px);
+  padding: clamp(1.2rem, 4vw, 1.7rem);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: 0 35px 90px rgba(0, 0, 0, 0.28);
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 850;
+  margin-bottom: 1rem;
+}
+
+.logoWrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.1rem;
+}
+
+.logo {
+  width: auto;
+  height: 74px;
+  object-fit: contain;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1.4rem;
+}
+
+.header span {
+  display: inline-flex;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+.header h1 {
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.error {
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+  font-weight: 850;
+  margin-bottom: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--navy);
+  font-size: 0.85rem;
+  font-weight: 850;
+}
+
+.inputWrap {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  padding: 0 0.9rem;
+  background: white;
+}
+
+.inputWrap svg {
+  color: var(--gold-dark);
+  flex: 0 0 auto;
+}
+
+.inputWrap input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font: inherit;
+  color: var(--navy);
+}
+
+.inputWrap button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.inputWrap:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.14);
+}
+
+.submit {
+  min-height: 54px;
+  border: none;
+  border-radius: 999px;
+  background: var(--navy);
+  color: white;
+  font-weight: 950;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+}
+
+.submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .card {
+    border-radius: 24px;
+  }
+
+  .logo {
+    height: 62px;
+  }
+}

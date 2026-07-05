@@ -1,0 +1,32 @@
+/* components/NearbyLandmarks.module.css */
+.landmarks {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.landmarks h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.landmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--background);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+}
+
+.landmark svg {
+  color: var(--accent);
+}

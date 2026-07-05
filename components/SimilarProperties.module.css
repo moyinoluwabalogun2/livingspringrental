@@ -1,0 +1,9 @@
+/* components/SimilarProperties.module.css */
+.similar {
+  margin-top: 3rem;
+}
+
+.similar h2 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+}

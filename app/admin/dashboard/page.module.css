@@ -1,0 +1,181 @@
+.page {
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.header span {
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.header h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  margin: 0.4rem 0;
+}
+
+.header p {
+  color: var(--muted);
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  background: var(--navy);
+  color: white;
+  font-weight: 900;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.statsGrid div,
+.panel {
+  background: white;
+  border: 1px solid rgba(7, 17, 31, 0.08);
+  border-radius: 26px;
+  box-shadow: var(--shadow-sm);
+}
+
+.statsGrid div {
+  padding: 1.2rem;
+}
+
+.statsGrid svg {
+  color: var(--gold-dark);
+  margin-bottom: 1rem;
+}
+
+.statsGrid span,
+.statsGrid strong {
+  display: block;
+}
+
+.statsGrid span {
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.statsGrid strong {
+  font-size: 2rem;
+  margin-top: 0.35rem;
+}
+
+.panel {
+  padding: 1.2rem;
+}
+
+.panelTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.panelTop h2 {
+  font-size: 1.7rem;
+}
+
+.panelTop a {
+  color: var(--gold-dark);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  text-decoration: none;
+  color: var(--navy);
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--cream);
+}
+
+.list strong,
+.list span {
+  display: block;
+}
+
+.list span {
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.list small {
+  height: fit-content;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(212, 175, 55, 0.16);
+  color: var(--gold-dark);
+  font-weight: 900;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty h3 {
+  font-size: 1.6rem;
+}
+
+.empty p {
+  color: var(--muted);
+  margin: 0.5rem 0 1rem;
+}
+
+@media (max-width: 950px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 580px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .list a {
+    flex-direction: column;
+  }
+
+  .addBtn {
+    width: 100%;
+  }
+}

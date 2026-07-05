@@ -1,0 +1,88 @@
+.section {
+  padding: 6rem 0;
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.12), transparent 32%),
+    var(--surface);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.76rem;
+  font-weight: 900;
+  margin-bottom: 0.8rem;
+}
+
+.header h2 {
+  max-width: 760px;
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 1;
+  margin-bottom: 0.8rem;
+}
+
+.header p {
+  max-width: 680px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.skeletonCard {
+  height: 450px;
+  border-radius: 30px;
+  background: linear-gradient(90deg, #eee, #f8f8f8, #eee);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+.empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  border-radius: 30px;
+  background: white;
+  border: 1px dashed var(--border);
+}
+
+.empty h3 {
+  font-size: 1.7rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty p {
+  color: var(--text-secondary);
+  margin-bottom: 1.2rem;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 850px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .skeletonGrid {
+    grid-template-columns: 1fr;
+  }
+}

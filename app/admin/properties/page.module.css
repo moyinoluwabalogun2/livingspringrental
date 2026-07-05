@@ -1,0 +1,260 @@
+.page {
+  padding: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.4rem;
+}
+
+.header span {
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.header h1 {
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 1;
+  margin: 0.4rem 0;
+}
+
+.header p {
+  color: var(--muted);
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  border: none;
+  border-radius: 999px;
+  padding: 0.85rem 1rem;
+  background: var(--navy);
+  color: white;
+  font-weight: 900;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.searchBox {
+  min-height: 50px;
+  flex: 1;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: white;
+  border: 1px solid rgba(7, 17, 31, 0.08);
+  border-radius: 18px;
+  padding: 0 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.searchBox svg {
+  color: var(--gold-dark);
+}
+
+.searchBox input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font: inherit;
+}
+
+.count {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1rem;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid rgba(7, 17, 31, 0.08);
+  color: var(--muted);
+  font-weight: 850;
+  box-shadow: var(--shadow-sm);
+}
+
+.tableCard {
+  background: white;
+  border-radius: 28px;
+  border: 1px solid rgba(7, 17, 31, 0.08);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.table {
+  min-width: 900px;
+}
+
+.tableHead,
+.tableRow {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr 0.8fr 1fr 0.85fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+}
+
+.tableHead {
+  background: var(--navy);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tableRow {
+  border-bottom: 1px solid rgba(7, 17, 31, 0.08);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.propertyCell {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.thumb {
+  width: 64px;
+  height: 54px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--navy);
+  color: var(--gold);
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  flex: 0 0 auto;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tableRow strong,
+.tableRow small {
+  display: block;
+}
+
+.tableRow strong {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tableRow strong svg {
+  color: var(--gold-dark);
+}
+
+.tableRow small {
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.available,
+.unavailable {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.38rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.available {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.unavailable {
+  color: var(--navy);
+  background: rgba(17, 24, 39, 0.1);
+}
+
+.actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.actions a,
+.actions button {
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  border: none;
+  background: var(--cream);
+  color: var(--navy);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.actions button {
+  color: #b91c1c;
+}
+
+.empty {
+  text-align: center;
+  padding: 4rem 1rem;
+  background: white;
+  border-radius: 28px;
+  border: 1px dashed rgba(7, 17, 31, 0.16);
+}
+
+.empty h2 {
+  font-size: 2rem;
+}
+
+.empty p {
+  color: var(--muted);
+  margin: 0.5rem 0 1rem;
+}
+
+@media (max-width: 950px) {
+  .header,
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .searchBox {
+    max-width: none;
+    width: 100%;
+  }
+
+  .count,
+  .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tableCard {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 580px) {
+  .page {
+    padding: 1rem;
+  }
+}

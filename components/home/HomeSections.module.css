@@ -1,0 +1,219 @@
+.sectionHeader {
+  max-width: 780px;
+  margin-bottom: 2rem;
+}
+
+.sectionHeader span,
+.goldText {
+  display: inline-flex;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.76rem;
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+}
+
+.sectionHeader h2,
+.showcase h2,
+.ctaBox h2 {
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 1;
+}
+
+.featureCard,
+.stepCard,
+.testimonialCard {
+  padding: 2rem;
+  border-radius: 28px;
+  background: white;
+  border: 1px solid rgba(8, 17, 31, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.featureCard svg,
+.stepCard svg {
+  color: var(--accent-dark);
+  margin-bottom: 1rem;
+}
+
+.featureCard h3,
+.stepCard h3 {
+  font-size: 1.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.featureCard p,
+.stepCard p,
+.testimonialCard p,
+.showcase p,
+.ctaBox p {
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.showcase {
+  padding: 6rem 0;
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.18), transparent 32%),
+    linear-gradient(145deg, #050816, #08111f 55%, #111827);
+  color: white;
+}
+
+.showcase h2,
+.ctaBox h2 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.showcaseGrid {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.checks {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.checks span {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+}
+
+.checks svg {
+  color: var(--accent);
+}
+
+.imagePanel {
+  min-height: 430px;
+  border-radius: 36px;
+  background:
+    linear-gradient(rgba(8, 17, 31, 0.12), rgba(8, 17, 31, 0.42)),
+    url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80')
+      center/cover;
+  position: relative;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+}
+
+.statCard {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  padding: 1.2rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary);
+}
+
+.statCard strong {
+  display: block;
+  font-size: 1.25rem;
+}
+
+.statCard small {
+  color: var(--text-secondary);
+}
+
+.processGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.2rem;
+}
+
+.stepNumber {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(212, 175, 55, 0.14);
+  color: var(--accent-dark);
+  font-weight: 900;
+  margin-bottom: 1rem;
+}
+
+.testimonials {
+  padding: 6rem 0;
+  background: var(--surface-2);
+}
+
+.stars {
+  display: flex;
+  gap: 0.2rem;
+  color: var(--accent-dark);
+  margin-bottom: 1rem;
+}
+
+.testimonialCard p {
+  margin-bottom: 1rem;
+}
+
+.cta {
+  padding: 6rem 0;
+  background: var(--surface);
+}
+
+.ctaBox {
+  border-radius: 38px;
+  padding: clamp(2rem, 6vw, 5rem);
+  text-align: center;
+  color: white;
+  background:
+    linear-gradient(rgba(8, 17, 31, 0.84), rgba(8, 17, 31, 0.9)),
+    url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1600&q=80')
+      center/cover;
+  box-shadow: var(--shadow-lg);
+}
+
+.ctaBox > span {
+  display: inline-flex;
+  color: var(--accent);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  margin-bottom: 0.85rem;
+}
+
+.ctaBox p {
+  max-width: 620px;
+  margin: 0 auto 1.5rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ctaActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ctaActions .btn-outline {
+  border-color: rgba(255, 255, 255, 0.24);
+  color: white;
+}
+
+@media (max-width: 950px) {
+  .showcaseGrid,
+  .processGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .showcaseGrid,
+  .processGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .imagePanel {
+    min-height: 320px;
+  }
+}

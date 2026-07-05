@@ -1,0 +1,138 @@
+.inquiryForm {
+  background: var(--white);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: sticky;
+  top: 100px;
+}
+
+.inquiryForm h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+
+.propertyInfo {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.success {
+  background: #D1FAE5;
+  color: #065F46;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.error {
+  background: #FEE2E2;
+  color: #991B1B;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.formGroup {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  z-index: 1;
+}
+
+.formGroup textarea ~ .inputIcon {
+  top: 1.5rem;
+  transform: none;
+}
+
+.formGroup input,
+.formGroup textarea,
+.formGroup select {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.3s ease;
+}
+
+.formGroup textarea {
+  padding-top: 1rem;
+  resize: vertical;
+}
+
+.formGroup input:focus,
+.formGroup textarea:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.whatsappBtn,
+.emailBtn {
+  flex: 1;
+  padding: 0.875rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.whatsappBtn {
+  background: #25D366;
+  color: white;
+}
+
+.whatsappBtn:hover {
+  background: #20bd5a;
+  transform: translateY(-2px);
+}
+
+.emailBtn {
+  background: var(--primary);
+  color: white;
+}
+
+.emailBtn:hover {
+  background: var(--secondary);
+  transform: translateY(-2px);
+}
+
+.emailBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .inquiryForm {
+    position: static;
+    margin-top: 2rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+}

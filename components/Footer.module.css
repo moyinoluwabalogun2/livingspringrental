@@ -1,0 +1,100 @@
+.footer {
+  background:
+    radial-gradient(circle at top left, rgba(212, 175, 55, 0.16), transparent 32%),
+    linear-gradient(145deg, #050816, var(--navy) 55%, var(--navy-soft));
+  color: white;
+  padding: clamp(3.5rem, 7vw, 5rem) 0 1.4rem;
+}
+
+.footerGrid {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, 1fr);
+  gap: 2rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.logo {
+  width: auto;
+  height: 78px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+
+.brand p {
+  max-width: 390px;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.75;
+  margin-bottom: 1.2rem;
+}
+
+.socials {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.socials a {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--navy);
+  background: linear-gradient(135deg, var(--gold), #b98c21);
+  transition: 0.25s ease;
+}
+
+.socials a:hover {
+  transform: translateY(-3px);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.column h3 {
+  color: white;
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.column a,
+.column span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.5;
+  transition: 0.2s ease;
+}
+
+.column a:hover {
+  color: var(--gold);
+  transform: translateX(3px);
+}
+
+.bottom {
+  padding-top: 1.25rem;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .footerGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .footerGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .logo {
+    height: 64px;
+  }
+}

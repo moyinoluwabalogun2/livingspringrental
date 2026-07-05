@@ -1,0 +1,78 @@
+.wrapper {
+  position: relative;
+  z-index: 10;
+  margin-top: -3.8rem;
+}
+
+.searchCard {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(8, 17, 31, 0.08);
+  box-shadow: var(--shadow-lg);
+  border-radius: 30px;
+  padding: clamp(1rem, 2vw, 1.4rem);
+  display: grid;
+  gap: 1rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-bottom: 0.25rem;
+}
+
+.searchCard h3 {
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, minmax(150px, 1fr)) auto;
+  gap: 0.8rem;
+}
+
+.grid input,
+.grid select {
+  min-height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0 1rem;
+  font: inherit;
+  background: white;
+  outline: none;
+  color: var(--primary);
+}
+
+.grid input:focus,
+.grid select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.13);
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .grid button {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 680px) {
+  .wrapper {
+    margin-top: 0;
+    padding-top: 1rem;
+  }
+
+  .searchCard {
+    border-radius: 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

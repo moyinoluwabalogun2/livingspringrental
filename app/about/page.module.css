@@ -1,0 +1,259 @@
+.page {
+  background: var(--cream);
+}
+
+.hero {
+  color: white;
+  padding: clamp(4rem, 8vw, 7rem) 0;
+  background:
+    linear-gradient(rgba(7, 17, 31, 0.88), rgba(7, 17, 31, 0.9)),
+    url('https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1800&q=85')
+      center / cover;
+}
+
+.kicker,
+.sectionHead span,
+.ctaBox span {
+  display: inline-flex;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-bottom: 0.75rem;
+}
+
+.hero h1 {
+  color: white;
+  max-width: 860px;
+  font-size: clamp(2.45rem, 6vw, 5rem);
+  line-height: 0.98;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  max-width: 680px;
+  color: rgba(255, 255, 255, 0.76);
+  line-height: 1.75;
+  font-size: 1.05rem;
+}
+
+.storySection,
+.valuesSection,
+.statsSection,
+.ctaSection {
+  padding: clamp(3.5rem, 7vw, 6rem) 0;
+}
+
+.storyGrid {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+
+.imageWrap {
+  height: 520px;
+  border-radius: 34px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.imageWrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.storyText h2,
+.sectionHead h2,
+.ctaBox h2 {
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  line-height: 1.04;
+  margin-bottom: 0.9rem;
+}
+
+.storyText p,
+.valueCard p,
+.ctaBox p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.storyText p + p {
+  margin-top: 0.85rem;
+}
+
+.checks {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.4rem 0;
+}
+
+.checks p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--navy);
+  font-weight: 750;
+}
+
+.checks svg {
+  flex: 0 0 auto;
+  color: var(--gold-dark);
+  margin-top: 0.15rem;
+}
+
+.valuesSection {
+  background: white;
+}
+
+.sectionHead {
+  max-width: 760px;
+  margin-bottom: 2rem;
+}
+
+.sectionHead span {
+  color: var(--gold-dark);
+}
+
+.valueGrid,
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.1rem;
+}
+
+.valueCard,
+.statsGrid div {
+  padding: 1.5rem;
+  border-radius: 28px;
+  background: var(--cream);
+  border: 1px solid rgba(7, 17, 31, 0.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.valueCard svg,
+.statsGrid svg {
+  color: var(--gold-dark);
+  margin-bottom: 1rem;
+}
+
+.valueCard h3 {
+  font-size: 1.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.statsSection {
+  background: var(--navy);
+}
+
+.statsGrid div {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.statsGrid strong,
+.statsGrid span {
+  display: block;
+}
+
+.statsGrid strong {
+  color: white;
+  font-size: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.statsGrid span {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.6;
+}
+
+.ctaBox {
+  text-align: center;
+  border-radius: 34px;
+  padding: clamp(2rem, 6vw, 4.2rem);
+  color: white;
+  background:
+    linear-gradient(rgba(7, 17, 31, 0.86), rgba(7, 17, 31, 0.9)),
+    url('https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1700&q=85')
+      center / cover;
+  box-shadow: var(--shadow-lg);
+}
+
+.ctaBox h2 {
+  color: white;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.ctaBox p {
+  max-width: 620px;
+  margin: 0 auto 1.4rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.lightBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.9rem 1.2rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 900;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 950px) {
+  .storyGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .valueGrid,
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .imageWrap {
+    height: 420px;
+  }
+}
+
+@media (max-width: 680px) {
+  .hero {
+    padding: 3.5rem 0;
+  }
+
+  .valueGrid,
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .imageWrap {
+    height: 310px;
+    border-radius: 24px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions a {
+    width: 100%;
+  }
+
+  .ctaBox {
+    border-radius: 26px;
+  }
+}
