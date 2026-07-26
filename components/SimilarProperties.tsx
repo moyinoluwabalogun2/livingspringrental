@@ -37,11 +37,10 @@ export default function SimilarProperties({ currentPropertyId, category }: { cur
       <h2>Similar Properties</h2>
       <div className="grid">
         {properties.map((property: any) => (
-          <PropertyCard 
-            key={property.id} 
-            property={property} 
-            onClick={() => window.location.href = `/properties/${property.id}`}
-          />
+          <PropertyCard
+  key={property.id}
+  property={property}
+/>
         ))}
       </div>
     </div>
