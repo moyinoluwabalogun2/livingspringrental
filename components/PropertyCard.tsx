@@ -1,7 +1,14 @@
 'use client';
 
-import Image from 'next/image';
-import { ArrowRight, Bath, BedDouble, Building2, MapPin, Video } from 'lucide-react';
+import Link from 'next/link';
+import {
+  ArrowRight,
+  Bath,
+  BedDouble,
+  Building2,
+  MapPin,
+  Video,
+} from 'lucide-react';
 import styles from './PropertyCard.module.css';
 
 type Unit = {
@@ -25,13 +32,14 @@ type Property = {
   featured?: boolean;
 };
 
-type Props = {
+type PropertyCardProps = {
   property: Property;
-  onClick?: () => void;
 };
 
 function formatPrice(price?: number, period?: string) {
-  if (!price) return 'Price on request';
+  if (!price) {
+    return 'Price on request';
+  }
 
   const amount = new Intl.NumberFormat('en-NG', {
     style: 'currency',
@@ -39,77 +47,133 @@ function formatPrice(price?: number, period?: string) {
     maximumFractionDigits: 0,
   }).format(price);
 
-  if (!period || period === 'one-time') return amount;
+  if (!period || period === 'one-time') {
+    return amount;
+  }
+
   return `${amount}/${period}`;
 }
 
-function isVideo(url?: string) {
-  return Boolean(url && /\.(mp4|webm|ogg)$/i.test(url));
+function isDirectVideo(url?: string) {
+  if (!url) return false;
+
+  const cleanUrl = url.split('?')[0].split('#')[0];
+
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleanUrl);
 }
 
-export default function PropertyCard({ property, onClick }: Props) {
+export default function PropertyCard({
+  property,
+}: PropertyCardProps) {
   const units = property.units || [];
-  const availableUnits = units.filter((unit) => unit.status === 'available');
-  const displayUnits = availableUnits.length ? availableUnits : units;
 
-  const lowestUnit = displayUnits.length
-    ? [...displayUnits].sort((a, b) => Number(a.price || 0) - Number(b.price || 0))[0]
+  const availableUnits = units.filter(
+    (unit) => unit.status === 'available'
+  );
+
+  const unitsForPrice = availableUnits.length
+    ? availableUnits
+    : units;
+
+  const lowestUnit = unitsForPrice.length
+    ? [...unitsForPrice].sort(
+        (a, b) =>
+          Number(a.price || 0) - Number(b.price || 0)
+      )[0]
     : undefined;
 
-  const mediaUrl = property.media?.[0];
-  const hasVideo = isVideo(mediaUrl);
+  const mediaUrl = property.media?.find(Boolean);
+  const video = isDirectVideo(mediaUrl);
 
-  const statusText = availableUnits.length
+  const availabilityText = availableUnits.length
     ? `${availableUnits.length} Available`
     : units.length
       ? 'Currently Unavailable'
       : 'Contact Agent';
 
+  const href = property.id
+    ? `/properties/${property.id}`
+    : '/properties';
+
   return (
-    <article className={styles.card} onClick={onClick}>
+    <Link
+      href={href}
+      className={styles.card}
+      aria-label={`View ${property.title || 'property'}`}
+    >
       <div className={styles.media}>
-        {mediaUrl && !hasVideo ? (
-          <Image
+        {mediaUrl && !video ? (
+          <img
             src={mediaUrl}
             alt={property.title || 'Property'}
-            fill
-            sizes="(max-width: 768px) 100vw, 33vw"
             className={styles.image}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className={styles.fallbackMedia}>
-            {hasVideo ? <Video size={30} /> : <Building2 size={34} />}
-            <span>{hasVideo ? 'Video Tour' : 'Living Springs'}</span>
+            {video ? (
+              <Video size={32} />
+            ) : (
+              <Building2 size={36} />
+            )}
+
+            <span>
+              {video ? 'Video Tour Available' : 'Living Springs'}
+            </span>
           </div>
         )}
 
         <div className={styles.badges}>
-          <span>{property.listingPurpose || 'Rent'}</span>
-          <span className={availableUnits.length ? styles.available : styles.unavailable}>
-            {statusText}
+          <span>
+            {property.listingPurpose || 'Rent'}
+          </span>
+
+          <span
+            className={
+              availableUnits.length
+                ? styles.available
+                : styles.unavailable
+            }
+          >
+            {availabilityText}
           </span>
         </div>
 
-        {property.featured && <div className={styles.featured}>Featured</div>}
+        {property.featured && (
+          <div className={styles.featured}>
+            Featured
+          </div>
+        )}
       </div>
 
       <div className={styles.body}>
         <p className={styles.location}>
           <MapPin size={15} />
-          {property.location || 'Location available on request'}
+
+          {property.location ||
+            'Location available on request'}
         </p>
 
         <h3>{property.title || 'Untitled Property'}</h3>
 
         <p className={styles.price}>
           {units.length > 1 ? 'From ' : ''}
-          {formatPrice(lowestUnit?.price, lowestUnit?.pricePeriod)}
+
+          {formatPrice(
+            lowestUnit?.price,
+            lowestUnit?.pricePeriod
+          )}
         </p>
 
         <div className={styles.meta}>
           <span>
             <Building2 size={15} />
-            {property.propertyType || property.category || 'Property'}
+
+            {property.propertyType ||
+              property.category ||
+              'Property'}
           </span>
 
           {lowestUnit?.bedrooms !== undefined && (
@@ -134,15 +198,18 @@ export default function PropertyCard({ property, onClick }: Props) {
               .map((unit) => unit.unitType)
               .filter(Boolean)
               .join(' • ')}
-            {units.length > 3 ? ` +${units.length - 3} more` : ''}
+
+            {units.length > 3
+              ? ` +${units.length - 3} more`
+              : ''}
           </p>
         )}
 
-        <button type="button" className={styles.viewBtn}>
+        <span className={styles.viewBtn}>
           View Property
           <ArrowRight size={16} />
-        </button>
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }

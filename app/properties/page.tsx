@@ -239,11 +239,10 @@ function PropertiesPageContent() {
           ) : filteredProperties.length > 0 ? (
             <div className="grid">
               {filteredProperties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  onClick={() => router.push(`/properties/${property.id}`)}
-                />
+               <PropertyCard
+  key={property.id}
+  property={property}
+/>
               ))}
             </div>
           ) : (

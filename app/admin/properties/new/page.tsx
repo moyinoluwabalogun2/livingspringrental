@@ -199,9 +199,16 @@ export default function AddPropertyPage() {
           media: data.media?.length ? data.media : [''],
           amenities: data.amenities?.length ? data.amenities : [''],
           featured: Boolean(data.featured),
-          mapEmbedUrl: data.mapEmbedUrl || '',
-          latitude: data.latitude?.toString() || '',
-          longitude: data.longitude?.toString() || '',
+          mapEmbedUrl:
+    data.mapEmbedUrl ||
+    data.googleMapsEmbedUrl ||
+    data.googleMapEmbedUrl ||
+    data.googleMapUrl ||
+    data.mapUrl ||
+    data.mapLink ||
+    '',
+          latitude: String(data.latitude ?? ''),
+  longitude: String(data.longitude ?? ''),
           nearbyLandmarks: data.nearbyLandmarks?.length ? data.nearbyLandmarks : [''],
           units: data.units?.length
             ? data.units.map((unit: Partial<Unit>) => ({
@@ -342,8 +349,14 @@ export default function AddPropertyPage() {
       amenities: cleanStringArray(form.amenities),
       featured: Boolean(form.featured),
       mapEmbedUrl: form.mapEmbedUrl.trim(),
-      latitude: Number(form.latitude) || 0,
-      longitude: Number(form.longitude) || 0,
+       latitude: form.latitude.trim()
+    ? Number(form.latitude)
+    : null,
+
+  longitude: form.longitude.trim()
+    ? Number(form.longitude)
+    : null,
+
       nearbyLandmarks: cleanStringArray(form.nearbyLandmarks),
       units: cleanUnits(form.units),
       updatedAt: new Date(),
@@ -472,15 +485,7 @@ export default function AddPropertyPage() {
               </select>
             </label>
 
-            <label>
-              Location *
-              <input
-                value={form.location}
-                onChange={(event) => update('location', event.target.value)}
-                placeholder="Ikeja, Lagos"
-                required
-              />
-            </label>
+            
 
             <label className={styles.full}>
               Full Address

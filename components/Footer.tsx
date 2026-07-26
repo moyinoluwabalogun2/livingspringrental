@@ -58,14 +58,14 @@ export default function Footer() {
             <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">
               <Phone size={16} /> WhatsApp Agent
             </a>
-            <a href="mailto:info@livingspringsrental.com">
+            <a href="mailto:bolsimfarmss@gmail.com">
               <Mail size={16} /> Email Us
             </a>
             <Link href="/contact">
               <Send size={16} /> Request Inspection
             </Link>
             <span>
-              <MapPin size={16} /> Lagos, Nigeria
+              <MapPin size={16} />  Nigeria
             </span>
           </div>
         </div>
