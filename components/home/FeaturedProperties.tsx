@@ -121,11 +121,10 @@ export default function FeaturedProperties() {
         ) : properties.length ? (
           <div className="grid">
             {properties.map((property) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                onClick={() => router.push(`/properties/${property.id}`)}
-              />
+             <PropertyCard
+  key={property.id}
+  property={property}
+/>
             ))}
           </div>
         ) : (
