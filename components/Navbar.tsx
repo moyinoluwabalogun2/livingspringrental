@@ -1,21 +1,22 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Building2, Home, Info, Mail, Menu, Phone, X } from 'lucide-react';
-import { useState } from 'react';
-import styles from './Navbar.module.css';
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Building2, Home, Info, Mail, Menu, Phone, X } from "lucide-react";
+import { useState } from "react";
+import styles from "./Navbar.module.css";
+import livingSpringsLogo from "../assets/living-springs-logo.png";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   const links = [
-    { href: '/', label: 'Home', icon: Home },
-    { href: '/properties', label: 'Properties', icon: Building2 },
-    { href: '/about', label: 'About', icon: Info },
-    { href: '/contact', label: 'Contact', icon: Mail },
+    { href: "/", label: "Home", icon: Home },
+    { href: "/properties", label: "Properties", icon: Building2 },
+    { href: "/about", label: "About", icon: Info },
+    { href: "/contact", label: "Contact", icon: Mail },
   ];
 
   return (
@@ -23,7 +24,7 @@ export default function Navbar() {
       <div className={styles.inner}>
         <Link href="/" className={styles.logo} onClick={() => setOpen(false)}>
           <Image
-            src="/images/living-springs-logo.png"
+            src={livingSpringsLogo}
             alt="Living Springs Rentals"
             width={180}
             height={70}
@@ -41,20 +42,24 @@ export default function Navbar() {
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
 
-        <nav className={`${styles.links} ${open ? styles.show : ''}`}>
+        <nav className={`${styles.links} ${open ? styles.show : ""}`}>
           {links.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
+              className={pathname === href ? styles.active : ""}
               onClick={() => setOpen(false)}
-              className={pathname === href ? styles.active : ''}
             >
               <Icon size={17} />
               {label}
             </Link>
           ))}
 
-          <Link href="/contact" className={styles.cta} onClick={() => setOpen(false)}>
+          <Link
+            href="/contact"
+            className={styles.cta}
+            onClick={() => setOpen(false)}
+          >
             <Phone size={17} />
             Book Inspection
           </Link>
