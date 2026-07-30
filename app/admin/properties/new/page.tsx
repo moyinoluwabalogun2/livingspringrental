@@ -329,33 +329,42 @@ export default function AddPropertyPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!form.title.trim() || !form.location.trim() || !form.propertyType.trim()) {
-      alert('Please fill in property title, location, and property type.');
+    const title = form.title.trim();
+    const location = form.location.trim() || form.address.trim();
+    const propertyType = form.propertyType.trim();
+
+    const missingFields: string[] = [];
+
+    if (!title) missingFields.push('property title');
+    if (!location) missingFields.push('location or full address');
+    if (!propertyType) missingFields.push('property type');
+
+    if (missingFields.length > 0) {
+      alert(`Please fill in: ${missingFields.join(', ')}.`);
       return;
     }
 
     setSaving(true);
 
     const payload = {
-      title: form.title.trim(),
+      title,
       category: form.category,
       listingPurpose: form.listingPurpose,
       structureType: form.structureType,
-      propertyType: form.propertyType,
-      location: form.location.trim(),
+      propertyType,
+      location,
       address: form.address.trim(),
       description: form.description.trim(),
       media: cleanStringArray(form.media),
       amenities: cleanStringArray(form.amenities),
       featured: Boolean(form.featured),
       mapEmbedUrl: form.mapEmbedUrl.trim(),
-       latitude: form.latitude.trim()
-    ? Number(form.latitude)
-    : null,
-
-  longitude: form.longitude.trim()
-    ? Number(form.longitude)
-    : null,
+      latitude: form.latitude.trim()
+        ? Number(form.latitude)
+        : null,
+      longitude: form.longitude.trim()
+        ? Number(form.longitude)
+        : null,
 
       nearbyLandmarks: cleanStringArray(form.nearbyLandmarks),
       units: cleanUnits(form.units),
@@ -372,7 +381,9 @@ export default function AddPropertyPage() {
         });
       }
 
+      alert(isEdit ? 'Property updated successfully.' : 'Property created successfully.');
       router.push('/admin/properties');
+      router.refresh();
     } catch (error) {
       console.error('Error saving property:', error);
       alert('Could not save property. Please check Firebase and try again.');
@@ -480,19 +491,31 @@ export default function AddPropertyPage() {
               >
                 <option value="">Select type</option>
                 {currentPropertyTypes.map((item) => (
-                  <option key={item}>{item}</option>
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
                 ))}
               </select>
             </label>
 
             
 
+            <label>
+              Location / Area *
+              <input
+                value={form.location}
+                onChange={(event) => update('location', event.target.value)}
+                placeholder="Isara-Remo, Ogun State"
+                required
+              />
+            </label>
+
             <label className={styles.full}>
               Full Address
               <input
                 value={form.address}
                 onChange={(event) => update('address', event.target.value)}
-                placeholder="Full address or inspection meeting point"
+                placeholder="Jewayo Community, near Focus Hotel, before Isara Secondary School"
               />
             </label>
 
