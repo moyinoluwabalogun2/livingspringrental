@@ -47,6 +47,7 @@ export default function AdminLoginPage() {
             width={220}
             height={90}
             priority
+            unoptimized
             className={styles.logo}
           />
         </div>
