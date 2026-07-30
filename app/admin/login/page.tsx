@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { auth, signInWithEmailAndPassword } from '@/lib/firebase';
 import styles from './page.module.css';
-import livingSpringsLogo from "../assets/living-springs-logo.png";
+import livingSpringsLogo from "../../../assets/living-springs-logo.png";
 
 export default function AdminLoginPage() {
   const router = useRouter();
