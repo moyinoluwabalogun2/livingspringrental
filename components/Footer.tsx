@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Mail, MapPin, Phone, Send } from 'lucide-react';
 import { FaWhatsapp, FaInstagram, FaFacebookF } from 'react-icons/fa';
 import styles from './Footer.module.css';
+import livingSpringsLogo from "../assets/living-springs-logo.png";
 
 export default function Footer() {
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
@@ -13,10 +14,12 @@ export default function Footer() {
         <div className={styles.footerGrid}>
           <div className={styles.brand}>
             <Image
-              src="/images/living-springs-logo.png"
+              src={livingSpringsLogo}
               alt="Living Springs Rentals"
               width={210}
               height={80}
+              unoptimized
+              priority
               className={styles.logo}
             />
 

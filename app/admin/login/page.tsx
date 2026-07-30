@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { auth, signInWithEmailAndPassword } from '@/lib/firebase';
 import styles from './page.module.css';
+import livingSpringsLogo from "../assets/living-springs-logo.png";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function AdminLoginPage() {
 
         <div className={styles.logoWrap}>
           <Image
-            src="/images/living-springs-logo.png"
+            src={livingSpringsLogo}
             alt="Living Springs Rentals"
             width={220}
             height={90}
