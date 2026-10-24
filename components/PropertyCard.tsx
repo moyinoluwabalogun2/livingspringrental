@@ -1,213 +1,713 @@
 'use client';
 
-import Link from 'next/link';
+import Link
+  from 'next/link';
+
 import {
   ArrowRight,
   Bath,
   BedDouble,
   Building2,
+  CheckCircle2,
+  FileText,
   MapPin,
+  Maximize2,
+  MoonStar,
+  School,
+  Users,
   Video,
 } from 'lucide-react';
-import styles from './PropertyCard.module.css';
 
-type Unit = {
-  unitType?: string;
-  price?: number;
-  pricePeriod?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  status?: string;
-};
+import {
+  formatLandSize,
+  formatListingSource,
+  formatPrice,
+  formatPropertyService,
+  getAvailableQuantity,
+  getPublicLocation,
+  getStartingPrice,
+  getTotalAvailableUnits,
+  isLandProperty,
+  type PropertyRecord,
+} from '@/lib/property';
 
-type Property = {
-  id?: string;
-  title?: string;
-  category?: string;
-  listingPurpose?: string;
-  propertyType?: string;
-  location?: string;
-  media?: string[];
-  units?: Unit[];
-  featured?: boolean;
-};
+import styles
+  from './PropertyCard.module.css';
 
 type PropertyCardProps = {
-  property: Property;
+  property:
+    PropertyRecord;
 };
 
-function formatPrice(price?: number, period?: string) {
-  if (!price) {
-    return 'Price on request';
+function isDirectVideo(
+  url?: string
+) {
+  if (!url) {
+    return false;
   }
 
-  const amount = new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    maximumFractionDigits: 0,
-  }).format(price);
+  const cleanUrl =
+    url
+      .split('?')[0]
+      .split('#')[0];
 
-  if (!period || period === 'one-time') {
-    return amount;
-  }
-
-  return `${amount}/${period}`;
+  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(
+    cleanUrl
+  );
 }
 
-function isDirectVideo(url?: string) {
-  if (!url) return false;
+function ServiceIcon({
+  service,
+}: {
+  service:
+    PropertyRecord[
+      'serviceType'
+    ];
+}) {
+  if (
+    service ===
+    'hostel'
+  ) {
+    return (
+      <School
+        size={15}
+        aria-hidden="true"
+      />
+    );
+  }
 
-  const cleanUrl = url.split('?')[0].split('#')[0];
+  if (
+    service ===
+    'shortlet'
+  ) {
+    return (
+      <MoonStar
+        size={15}
+        aria-hidden="true"
+      />
+    );
+  }
 
-  return /\.(mp4|webm|ogg|mov|m4v)$/i.test(cleanUrl);
+  return (
+    <Building2
+      size={15}
+      aria-hidden="true"
+    />
+  );
 }
 
 export default function PropertyCard({
   property,
 }: PropertyCardProps) {
-  const units = property.units || [];
+  const isLand =
+    isLandProperty(
+      property
+    );
 
-  const availableUnits = units.filter(
-    (unit) => unit.status === 'available'
-  );
+  const publicLocation =
+    getPublicLocation(
+      property
+    );
 
-  const unitsForPrice = availableUnits.length
-    ? availableUnits
-    : units;
+  const startingPrice =
+    getStartingPrice(
+      property
+    );
 
-  const lowestUnit = unitsForPrice.length
-    ? [...unitsForPrice].sort(
-        (a, b) =>
-          Number(a.price || 0) - Number(b.price || 0)
-      )[0]
-    : undefined;
+  const totalAvailable =
+    getTotalAvailableUnits(
+      property
+    );
 
-  const mediaUrl = property.media?.find(Boolean);
-  const video = isDirectVideo(mediaUrl);
+  const availableUnits =
+    property.units.filter(
+      (
+        unit
+      ) =>
+        getAvailableQuantity(
+          unit
+        ) > 0
+    );
 
-  const availabilityText = availableUnits.length
-    ? `${availableUnits.length} Available`
-    : units.length
-      ? 'Currently Unavailable'
-      : 'Contact Agent';
+  const unitsForMeta =
+    availableUnits.length
+      ? availableUnits
+      : property.units;
 
-  const href = property.id
-    ? `/properties/${property.id}`
-    : '/properties';
+  const firstUnit =
+    startingPrice
+      ? property.units.find(
+          (
+            unit
+          ) =>
+            unit.id ===
+            startingPrice.unitId
+        )
+      : unitsForMeta[0];
+
+  const imageUrl =
+    property.coverImage ||
+    property.media.find(
+      Boolean
+    ) ||
+    '';
+
+  const video =
+    isDirectVideo(
+      imageUrl
+    );
+
+  const uniqueUnitTypes =
+    Array.from(
+      new Set(
+        property.units
+          .map(
+            (
+              unit
+            ) =>
+              unit.unitType.trim()
+          )
+          .filter(
+            Boolean
+          )
+      )
+    );
+
+  const maxGuests =
+    Math.max(
+      property.maxGuests,
+      ...property.units.map(
+        (
+          unit
+        ) =>
+          unit.maxGuests
+      ),
+      0
+    );
+
+  const href =
+    `/properties/${property.id}`;
+
+  let availabilityText =
+    'Enquire';
+
+  if (
+    property.units.length >
+    0
+  ) {
+    if (
+      totalAvailable > 0
+    ) {
+      if (
+        property.serviceType ===
+        'hostel'
+      ) {
+        availabilityText =
+          `${totalAvailable} ${
+            totalAvailable ===
+            1
+              ? 'space'
+              : 'spaces'
+          } available`;
+      } else {
+        availabilityText =
+          'Available';
+      }
+    } else {
+      availabilityText =
+        property.serviceType ===
+        'property' &&
+        property.listingPurpose ===
+          'Sale'
+          ? 'Ask for status'
+          : 'Currently unavailable';
+    }
+  }
+
+  const showFrom =
+    property.units.length >
+      1 ||
+    uniqueUnitTypes.length >
+      1;
 
   return (
     <Link
       href={href}
-      className={styles.card}
-      aria-label={`View ${property.title || 'property'}`}
+      className={
+        styles.card
+      }
+      aria-label={`View ${
+        property.title ||
+        formatPropertyService(
+          property.serviceType
+        )
+      }`}
     >
-      <div className={styles.media}>
-        {mediaUrl && !video ? (
+      <div
+        className={
+          styles.media
+        }
+      >
+        {imageUrl &&
+        !video ? (
+          /*
+           * Admin media can still
+           * come from arbitrary URLs.
+           * Keep native image loading
+           * until media hosting is
+           * standardised.
+           */
+          // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={mediaUrl}
-            alt={property.title || 'Property'}
-            className={styles.image}
+            src={
+              imageUrl
+            }
+            alt={
+              property.title ||
+              'Living Spring listing'
+            }
+            className={
+              styles.image
+            }
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className={styles.fallbackMedia}>
-            {video ? (
-              <Video size={32} />
-            ) : (
-              <Building2 size={36} />
+          <div
+            className={
+              styles.fallbackMedia
+            }
+          >
+            <div
+              className={
+                styles.fallbackIcon
+              }
+            >
+              {video ? (
+                <Video
+                  size={28}
+                  aria-hidden="true"
+                />
+              ) : (
+                <ServiceIcon
+                  service={
+                    property.serviceType
+                  }
+                />
+              )}
+            </div>
+
+            <span>
+              {video
+                ? 'Video tour available'
+                : formatPropertyService(
+                    property.serviceType
+                  )}
+            </span>
+          </div>
+        )}
+
+        <div
+          className={
+            styles.topBadges
+          }
+        >
+          <span
+            className={
+              styles.serviceBadge
+            }
+          >
+            <ServiceIcon
+              service={
+                property.serviceType
+              }
+            />
+
+            {formatPropertyService(
+              property.serviceType
+            )}
+          </span>
+
+          {property.featured && (
+            <span
+              className={
+                styles.featuredBadge
+              }
+            >
+              Featured
+            </span>
+          )}
+        </div>
+
+        <div
+          className={
+            styles.sourceBadge
+          }
+        >
+          {formatListingSource(
+            property.listingSource
+          )}
+        </div>
+      </div>
+
+      <div
+        className={
+          styles.body
+        }
+      >
+        <div
+          className={
+            styles.location
+          }
+        >
+          <MapPin
+            size={15}
+            aria-hidden="true"
+          />
+
+          <span>
+            {publicLocation}
+          </span>
+        </div>
+
+        <h3>
+          {property.title ||
+            'Living Spring Listing'}
+        </h3>
+
+        <div
+          className={
+            styles.typeRow
+          }
+        >
+          <span>
+            {isLand
+              ? property.propertyType ||
+                'Land'
+              : property.propertyType ||
+                property.category ||
+                formatPropertyService(
+                  property.serviceType
+                )}
+          </span>
+
+          {property.serviceType ===
+            'property' &&
+            property.listingPurpose && (
+              <span
+                className={
+                  styles.purpose
+                }
+              >
+                {
+                  property.listingPurpose
+                }
+              </span>
+            )}
+        </div>
+
+        <div
+          className={
+            styles.priceBlock
+          }
+        >
+          <strong>
+            {showFrom &&
+            startingPrice
+              ? 'From '
+              : ''}
+
+            {startingPrice
+              ? formatPrice(
+                  startingPrice.amount,
+                  startingPrice.period
+                )
+              : 'Price on request'}
+          </strong>
+
+          {property.serviceType ===
+            'shortlet' &&
+            property.minStayNights >
+              1 && (
+              <span>
+                Minimum{' '}
+                {
+                  property.minStayNights
+                }{' '}
+                nights
+              </span>
+            )}
+        </div>
+
+        {/* =================================
+            LAND
+        ================================== */}
+
+        {isLand ? (
+          <div
+            className={
+              styles.meta
+            }
+          >
+            {property.landSize >
+              0 && (
+              <span>
+                <Maximize2
+                  size={15}
+                  aria-hidden="true"
+                />
+
+                {formatLandSize(
+                  property.landSize,
+                  property.landSizeUnit
+                )}
+              </span>
+            )}
+
+            {property.titleDocument && (
+              <span>
+                <FileText
+                  size={15}
+                  aria-hidden="true"
+                />
+
+                {
+                  property.titleDocument
+                }
+              </span>
             )}
 
             <span>
-              {video ? 'Video Tour Available' : 'Living Springs'}
+              <CheckCircle2
+                size={15}
+                aria-hidden="true"
+              />
+
+              {
+                availabilityText
+              }
             </span>
           </div>
+        ) : (
+          <>
+            {/* =============================
+                HOSTEL
+            ============================== */}
+
+            {property.serviceType ===
+              'hostel' && (
+              <div
+                className={
+                  styles.meta
+                }
+              >
+                <span>
+                  <School
+                    size={15}
+                    aria-hidden="true"
+                  />
+
+                  {uniqueUnitTypes.length ||
+                    1}{' '}
+                  {uniqueUnitTypes.length ===
+                  1
+                    ? 'room type'
+                    : 'room types'}
+                </span>
+
+                <span>
+                  <CheckCircle2
+                    size={15}
+                    aria-hidden="true"
+                  />
+
+                  {
+                    availabilityText
+                  }
+                </span>
+              </div>
+            )}
+
+            {/* =============================
+                SHORT-LET
+            ============================== */}
+
+            {property.serviceType ===
+              'shortlet' && (
+              <div
+                className={
+                  styles.meta
+                }
+              >
+                {firstUnit &&
+                  firstUnit.bedrooms >
+                    0 && (
+                    <span>
+                      <BedDouble
+                        size={15}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        firstUnit.bedrooms
+                      }{' '}
+                      {firstUnit.bedrooms ===
+                      1
+                        ? 'Bed'
+                        : 'Beds'}
+                    </span>
+                  )}
+
+                {firstUnit &&
+                  firstUnit.bathrooms >
+                    0 && (
+                    <span>
+                      <Bath
+                        size={15}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        firstUnit.bathrooms
+                      }{' '}
+                      {firstUnit.bathrooms ===
+                      1
+                        ? 'Bath'
+                        : 'Baths'}
+                    </span>
+                  )}
+
+                {maxGuests >
+                  0 && (
+                  <span>
+                    <Users
+                      size={15}
+                      aria-hidden="true"
+                    />
+
+                    Up to{' '}
+                    {
+                      maxGuests
+                    }{' '}
+                    guests
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* =============================
+                NORMAL PROPERTY / BUILDING
+            ============================== */}
+
+            {property.serviceType ===
+              'property' && (
+              <div
+                className={
+                  styles.meta
+                }
+              >
+                {firstUnit &&
+                  firstUnit.bedrooms >
+                    0 && (
+                    <span>
+                      <BedDouble
+                        size={15}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        firstUnit.bedrooms
+                      }{' '}
+                      {firstUnit.bedrooms ===
+                      1
+                        ? 'Bed'
+                        : 'Beds'}
+                    </span>
+                  )}
+
+                {firstUnit &&
+                  firstUnit.bathrooms >
+                    0 && (
+                    <span>
+                      <Bath
+                        size={15}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        firstUnit.bathrooms
+                      }{' '}
+                      {firstUnit.bathrooms ===
+                      1
+                        ? 'Bath'
+                        : 'Baths'}
+                    </span>
+                  )}
+
+                {property.units.length >
+                  1 && (
+                  <span>
+                    <Building2
+                      size={15}
+                      aria-hidden="true"
+                    />
+
+                    {
+                      property.units.length
+                    }{' '}
+                    units
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
 
-        <div className={styles.badges}>
-          <span>
-            {property.listingPurpose || 'Rent'}
-          </span>
-
-          <span
+        {uniqueUnitTypes.length >
+          0 &&
+          !isLand && (
+          <p
             className={
-              availableUnits.length
-                ? styles.available
-                : styles.unavailable
+              styles.units
             }
           >
-            {availabilityText}
-          </span>
-        </div>
+            {uniqueUnitTypes
+              .slice(
+                0,
+                3
+              )
+              .join(
+                ' • '
+              )}
 
-        {property.featured && (
-          <div className={styles.featured}>
-            Featured
-          </div>
-        )}
-      </div>
-
-      <div className={styles.body}>
-        <p className={styles.location}>
-          <MapPin size={15} />
-
-          {property.location ||
-            'Location available on request'}
-        </p>
-
-        <h3>{property.title || 'Untitled Property'}</h3>
-
-        <p className={styles.price}>
-          {units.length > 1 ? 'From ' : ''}
-
-          {formatPrice(
-            lowestUnit?.price,
-            lowestUnit?.pricePeriod
-          )}
-        </p>
-
-        <div className={styles.meta}>
-          <span>
-            <Building2 size={15} />
-
-            {property.propertyType ||
-              property.category ||
-              'Property'}
-          </span>
-
-          {lowestUnit?.bedrooms !== undefined && (
-            <span>
-              <BedDouble size={15} />
-              {lowestUnit.bedrooms} Bed
-            </span>
-          )}
-
-          {lowestUnit?.bathrooms !== undefined && (
-            <span>
-              <Bath size={15} />
-              {lowestUnit.bathrooms} Bath
-            </span>
-          )}
-        </div>
-
-        {units.length > 1 && (
-          <p className={styles.units}>
-            {units
-              .slice(0, 3)
-              .map((unit) => unit.unitType)
-              .filter(Boolean)
-              .join(' • ')}
-
-            {units.length > 3
-              ? ` +${units.length - 3} more`
+            {uniqueUnitTypes.length >
+            3
+              ? ` +${uniqueUnitTypes.length - 3} more`
               : ''}
           </p>
         )}
 
-        <span className={styles.viewBtn}>
-          View Property
-          <ArrowRight size={16} />
+        <span
+          className={
+            styles.viewBtn
+          }
+        >
+          {property.serviceType ===
+          'shortlet'
+            ? 'View Stay'
+            : property.serviceType ===
+                'hostel'
+              ? 'View Hostel'
+              : isLand
+                ? 'View Land'
+                : 'View Property'}
+
+          <ArrowRight
+            size={16}
+            aria-hidden="true"
+          />
         </span>
       </div>
     </Link>

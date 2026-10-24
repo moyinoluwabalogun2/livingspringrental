@@ -1,0 +1,430 @@
+.page {
+  padding:
+    clamp(
+      1rem,
+      3vw,
+      2rem
+    );
+}
+
+.header {
+  max-width: 760px;
+
+  margin-bottom: 1.4rem;
+}
+
+.header > span {
+  display: block;
+
+  margin-bottom: 0.3rem;
+
+  color:
+    var(--gold-dark);
+
+  font-size: 0.68rem;
+
+  font-weight: 900;
+
+  letter-spacing:
+    0.1em;
+
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin-bottom: 0.4rem;
+
+  font-size:
+    clamp(
+      2rem,
+      4vw,
+      3.3rem
+    );
+}
+
+.header p {
+  color:
+    var(--muted);
+
+  line-height: 1.65;
+}
+
+.message {
+  margin-bottom: 1rem;
+
+  border:
+    1px solid
+    rgba(
+      212,
+      175,
+      55,
+      0.28
+    );
+
+  border-radius: 14px;
+
+  padding:
+    0.8rem 0.9rem;
+
+  background:
+    rgba(
+      212,
+      175,
+      55,
+      0.08
+    );
+
+  color:
+    var(--navy);
+
+  font-size: 0.8rem;
+
+  font-weight: 700;
+}
+
+.layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(
+      280px,
+      350px
+    )
+    minmax(
+      0,
+      1fr
+    );
+
+  align-items: start;
+
+  gap: 1rem;
+}
+
+.controls {
+  position: sticky;
+
+  top: 100px;
+
+  display: grid;
+
+  gap: 0.85rem;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 22px;
+
+  padding: 1.1rem;
+
+  background: white;
+
+  box-shadow:
+    var(--shadow-sm);
+}
+
+.cardHeading {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 0.65rem;
+}
+
+.cardHeading svg {
+  flex: 0 0 auto;
+
+  color:
+    var(--gold-dark);
+}
+
+.cardHeading h2 {
+  margin-bottom: 0.15rem;
+
+  font-family:
+    var(--font-sans),
+    system-ui,
+    sans-serif;
+
+  font-size: 1rem;
+}
+
+.cardHeading p {
+  color:
+    var(--muted);
+
+  font-size: 0.75rem;
+
+  line-height: 1.45;
+}
+
+.controls label {
+  display: grid;
+
+  gap: 0.35rem;
+
+  color:
+    var(--muted-dark);
+
+  font-size: 0.72rem;
+
+  font-weight: 800;
+}
+
+.controls select,
+.controls input,
+.controls textarea {
+  width: 100%;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 11px;
+
+  outline: 0;
+
+  background:
+    var(--cream);
+
+  color:
+    var(--navy);
+}
+
+.controls select,
+.controls input {
+  min-height: 44px;
+
+  padding:
+    0 0.65rem;
+}
+
+.controls textarea {
+  resize: vertical;
+
+  padding: 0.7rem;
+}
+
+.controls select:focus,
+.controls input:focus,
+.controls textarea:focus {
+  border-color:
+    rgba(
+      212,
+      175,
+      55,
+      0.6
+    );
+
+  box-shadow:
+    0 0 0 3px
+    rgba(
+      212,
+      175,
+      55,
+      0.08
+    );
+}
+
+.selectedInfo {
+  border:
+    1px solid
+    var(--border);
+
+  border-radius: 12px;
+
+  padding: 0.75rem;
+
+  background:
+    var(--cream);
+}
+
+.selectedInfo strong {
+  display: block;
+
+  margin-bottom: 0.12rem;
+
+  font-size: 0.8rem;
+}
+
+.selectedInfo > span {
+  display: block;
+
+  margin-bottom: 0.4rem;
+
+  color:
+    var(--gold-dark);
+
+  font-size: 0.72rem;
+
+  font-weight: 750;
+}
+
+.selectedInfo p {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 0.3rem;
+
+  color:
+    var(--muted);
+
+  font-size: 0.68rem;
+
+  line-height: 1.45;
+}
+
+.selectedInfo svg {
+  flex: 0 0 auto;
+
+  margin-top: 0.1rem;
+}
+
+.dateGrid {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 0.55rem;
+}
+
+.saveButton,
+.clearButton {
+  min-height: 46px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 0.45rem;
+
+  border-radius: 12px;
+
+  font-weight: 850;
+
+  cursor: pointer;
+}
+
+.saveButton {
+  border: 0;
+
+  background:
+    var(--navy);
+
+  color: white;
+}
+
+.clearButton {
+  border:
+    1px solid
+    var(--border);
+
+  background: white;
+
+  color:
+    var(--navy);
+}
+
+.saveButton:disabled,
+.clearButton:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.55;
+}
+
+.help,
+.explanation {
+  display: grid;
+
+  grid-template-columns:
+    auto 1fr;
+
+  gap: 0.55rem;
+
+  border:
+    1px solid
+    rgba(
+      212,
+      175,
+      55,
+      0.22
+    );
+
+  border-radius: 14px;
+
+  padding: 0.75rem;
+
+  background:
+    rgba(
+      212,
+      175,
+      55,
+      0.055
+    );
+}
+
+.help svg,
+.explanation svg {
+  color:
+    var(--gold-dark);
+}
+
+.help p,
+.explanation p {
+  color:
+    var(--muted);
+
+  font-size: 0.72rem;
+
+  line-height: 1.5;
+}
+
+.calendarSide {
+  min-width: 0;
+}
+
+.calendarSide
+> :first-child {
+  margin-top: 0;
+}
+
+.explanation {
+  margin-top: 0.8rem;
+}
+
+.explanation strong {
+  display: block;
+
+  margin-bottom: 0.15rem;
+
+  color:
+    var(--navy);
+
+  font-size: 0.78rem;
+}
+
+@media (
+  max-width: 900px
+) {
+  .layout {
+    grid-template-columns:
+      1fr;
+  }
+
+  .controls {
+    position: static;
+  }
+}
+
+@media (
+  max-width: 520px
+) {
+  .dateGrid {
+    grid-template-columns:
+      1fr;
+  }
+}

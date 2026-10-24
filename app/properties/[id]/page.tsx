@@ -1,221 +1,265 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { doc, getDoc } from 'firebase/firestore';
+import Link
+  from 'next/link';
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import {
+  useParams,
+} from 'next/navigation';
+
+import {
+  doc,
+  getDoc,
+} from 'firebase/firestore';
+
 import {
   ArrowLeft,
   Bath,
   BedDouble,
   Building2,
+  CalendarDays,
   CheckCircle2,
+  Clock3,
+  FileText,
   Mail,
   MapPin,
+  Maximize2,
   Phone,
+  ShieldCheck,
   Toilet,
+  Users,
 } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa';
 
-import { db } from '@/lib/firebase';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import MediaGallery from '@/components/property/MediaGallery';
+import {
+  FaWhatsapp,
+} from 'react-icons/fa';
 
-import styles from './page.module.css';
+import {
+  db,
+} from '@/lib/firebase';
 
-type Landmark =
-  | string
-  | {
-      name?: string;
-      distance?: string;
-    };
+import Navbar
+  from '@/components/Navbar';
 
-type PropertyUnit = {
-  id?: string;
-  unitType?: string;
-  price?: number | string;
-  pricePeriod?: string;
-  bedrooms?: number | string;
-  bathrooms?: number | string;
-  toilets?: number | string;
-  status?: string;
-  description?: string;
-  inspectionInfo?: string;
-  media?: string[];
-  videoUrl?: string;
-};
+import Footer
+  from '@/components/Footer';
 
-type Property = {
-  id: string;
-  title?: string;
-  category?: string;
-  propertyType?: string;
-  listingPurpose?: string;
-  location?: string;
-  address?: string;
-  description?: string;
-  featured?: boolean;
+import MediaGallery
+  from '@/components/property/MediaGallery';
 
-  media?: string[];
-  videoUrl?: string;
+import AvailabilityCalendar
+  from '@/components/availability/AvailabilityCalendar';
 
-  amenities?: string[];
-  landmarks?: Landmark[];
-  units?: PropertyUnit[];
+import SimilarProperties
+  from '@/components/SimilarProperties';
 
-  /*
-   * Current and older possible map field names.
-   * The page checks all of them.
-   */
-  mapEmbedUrl?: string;
-  googleMapsEmbedUrl?: string;
-  googleMapEmbedUrl?: string;
-  googleMapUrl?: string;
-  mapUrl?: string;
-  mapLink?: string;
+import {
+  buildAvailabilityCalendarId,
+} from '@/lib/availability';
 
-  latitude?: number | string;
-  longitude?: number | string;
-};
+import {
+  formatLandSize,
+  formatListingSource,
+  formatPrice,
+  formatPropertyService,
+  getAvailableQuantity,
+  getPublicLocation,
+  getStartingPrice,
+  getTotalAvailableUnits,
+  getUnitDisplayPrice,
+  isLandProperty,
+  isPublicProperty,
+  normalizeProperty,
+  type PropertyRecord,
+  type PropertyUnit,
+} from '@/lib/property';
 
-function formatPrice(
-  price?: number | string,
-  pricePeriod?: string
-) {
-  const amount = Number(price);
+import {
+  getWhatsAppHref,
+  siteConfig,
+} from '@/lib/site';
 
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return 'Price on request';
-  }
+import styles
+  from './page.module.css';
 
-  const formattedPrice = new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-  const period = String(pricePeriod || '')
-    .trim()
-    .toLowerCase();
-
-  if (
-    !period ||
-    period === 'one-time' ||
-    period === 'one time' ||
-    period === 'once'
-  ) {
-    return formattedPrice;
-  }
-
-  const periodLabels: Record<string, string> = {
-    yearly: 'year',
-    annually: 'year',
-    annual: 'year',
-    monthly: 'month',
-    weekly: 'week',
-    daily: 'day',
-  };
-
-  return `${formattedPrice}/${
-    periodLabels[period] || pricePeriod
-  }`;
-}
-
-function formatStatus(status?: string) {
-  const cleanStatus = String(status || 'available')
-    .replaceAll('-', ' ')
-    .replaceAll('_', ' ')
-    .trim();
-
-  return cleanStatus.replace(/\b\w/g, (letter) =>
-    letter.toUpperCase()
-  );
-}
-
-function getLandmarkText(landmark: Landmark) {
-  if (typeof landmark === 'string') {
-    return landmark.trim();
-  }
-
-  return [landmark.name, landmark.distance]
-    .map((value) => String(value || '').trim())
-    .filter(Boolean)
-    .join(' — ');
-}
+/* =========================================
+   HELPERS
+========================================= */
 
 function cleanMediaList(
-  values: Array<string | undefined>
+  values:
+    Array<
+      string | undefined
+    >
 ) {
   return Array.from(
     new Set(
       values
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
+        .map(
+          (
+            value
+          ) =>
+            String(
+              value ||
+              ''
+            ).trim()
+        )
+        .filter(
+          Boolean
+        )
     )
   );
 }
 
-/**
- * Accepts either:
- *
- * 1. Full iframe HTML:
- *    <iframe src="https://www.google.com/maps/embed?..."></iframe>
- *
- * 2. Google Maps embed URL:
- *    https://www.google.com/maps/embed?pb=...
- *
- * 3. Google Maps query URL with output=embed.
- */
-function extractGoogleMapUrl(value?: string) {
-  const input = String(value || '').trim();
+function formatStatus(
+  value:
+    string
+) {
+  return value
+    .replaceAll(
+      '-',
+      ' '
+    )
+    .replaceAll(
+      '_',
+      ' '
+    )
+    .replace(
+      /\b\w/g,
+      (
+        character
+      ) =>
+        character
+          .toUpperCase()
+    );
+}
+
+function getBackRoute(
+  service:
+    PropertyRecord[
+      'serviceType'
+    ]
+) {
+  if (
+    service ===
+    'hostel'
+  ) {
+    return '/hostel';
+  }
+
+  if (
+    service ===
+    'shortlet'
+  ) {
+    return '/shortlet';
+  }
+
+  return '/properties';
+}
+
+function getBackLabel(
+  service:
+    PropertyRecord[
+      'serviceType'
+    ]
+) {
+  if (
+    service ===
+    'hostel'
+  ) {
+    return 'Back to Hostels';
+  }
+
+  if (
+    service ===
+    'shortlet'
+  ) {
+    return 'Back to Short-Lets';
+  }
+
+  return 'Back to Properties';
+}
+
+function extractGoogleMapUrl(
+  value:
+    string
+) {
+  const input =
+    value.trim();
 
   if (!input) {
     return '';
   }
 
-  const iframeSourceMatch = input.match(
-    /src\s*=\s*["']([^"']+)["']/i
-  );
+  const iframeSourceMatch =
+    input.match(
+      /src\s*=\s*["']([^"']+)["']/i
+    );
 
-  const possibleUrl = (
-    iframeSourceMatch?.[1] || input
-  )
-    .replaceAll('&amp;', '&')
-    .trim();
+  const possibleUrl =
+    (
+      iframeSourceMatch?.[
+        1
+      ] ||
+      input
+    )
+      .replaceAll(
+        '&amp;',
+        '&'
+      )
+      .trim();
 
   try {
-    const parsedUrl = new URL(possibleUrl);
+    const parsed =
+      new URL(
+        possibleUrl
+      );
 
-    const hostname = parsedUrl.hostname.toLowerCase();
+    const hostname =
+      parsed.hostname
+        .toLowerCase();
 
-    const isGoogleMapsHost =
-      hostname === 'google.com' ||
-      hostname.endsWith('.google.com') ||
-      hostname === 'maps.google.com';
+    const isGoogle =
+      hostname ===
+        'google.com' ||
+      hostname ===
+        'maps.google.com' ||
+      hostname.endsWith(
+        '.google.com'
+      );
 
-    if (!isGoogleMapsHost) {
+    if (!isGoogle) {
       return '';
     }
 
-    const isEmbedUrl =
-      parsedUrl.pathname.includes('/maps/embed') ||
-      parsedUrl.searchParams.get('output') === 'embed';
-
-    if (isEmbedUrl) {
-      return parsedUrl.toString();
+    if (
+      parsed.pathname.includes(
+        '/maps/embed'
+      ) ||
+      parsed.searchParams.get(
+        'output'
+      ) ===
+        'embed'
+    ) {
+      return parsed
+        .toString();
     }
 
-    /*
-     * Accept a Google Maps URL containing a q parameter and
-     * convert it into an embeddable query URL.
-     */
-    const query = parsedUrl.searchParams.get('q');
+    const query =
+      parsed.searchParams.get(
+        'q'
+      );
 
     if (query) {
       return `https://www.google.com/maps?q=${encodeURIComponent(
         query
-      )}&z=17&output=embed`;
+      )}&z=16&output=embed`;
     }
   } catch {
     return '';
@@ -224,173 +268,262 @@ function extractGoogleMapUrl(value?: string) {
   return '';
 }
 
-function buildPropertyMapUrl(property: Property | null) {
-  if (!property) {
-    return '';
-  }
-
+function buildPublicMapUrl(
+  property:
+    PropertyRecord
+) {
   /*
-   * First choice:
-   * Use the exact map iframe or embed URL stored for this property.
+   * If Living Spring has explicitly
+   * chosen to expose the exact address,
+   * precise map data is allowed.
    */
-  const savedMapValues = [
-    property.mapEmbedUrl,
-    property.googleMapsEmbedUrl,
-    property.googleMapEmbedUrl,
-    property.googleMapUrl,
-    property.mapUrl,
-    property.mapLink,
-  ];
+  if (
+    property.showFullAddress
+  ) {
+    const storedMap =
+      extractGoogleMapUrl(
+        property.mapEmbedUrl
+      );
 
-  for (const savedValue of savedMapValues) {
-    const extractedUrl =
-      extractGoogleMapUrl(savedValue);
+    if (
+      storedMap
+    ) {
+      return storedMap;
+    }
 
-    if (extractedUrl) {
-      return extractedUrl;
+    if (
+      property.latitude !==
+        null &&
+      property.longitude !==
+        null
+    ) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(
+        `${property.latitude},${property.longitude}`
+      )}&z=17&output=embed`;
+    }
+
+    if (
+      property.address
+        .trim()
+    ) {
+      return `https://www.google.com/maps?q=${encodeURIComponent(
+        property.address
+      )}&z=17&output=embed`;
     }
   }
 
   /*
-   * Second choice:
-   * Use this property's latitude and longitude.
+   * Privacy-safe fallback:
+   * only map the public area/city/state,
+   * not saved coordinates or exact address.
    */
-  const latitude = String(
-    property.latitude ?? ''
-  ).trim();
+  const publicLocation =
+    getPublicLocation(
+      property
+    );
 
-  const longitude = String(
-    property.longitude ?? ''
-  ).trim();
-
-  const validLatitude =
-    latitude !== '' &&
-    Number.isFinite(Number(latitude));
-
-  const validLongitude =
-    longitude !== '' &&
-    Number.isFinite(Number(longitude));
-
-  if (validLatitude && validLongitude) {
-    return `https://www.google.com/maps?q=${encodeURIComponent(
-      `${latitude},${longitude}`
-    )}&z=17&output=embed`;
+  if (
+    !publicLocation ||
+    publicLocation ===
+      'Nigeria'
+  ) {
+    return '';
   }
 
-  /*
-   * Last choice:
-   * Search Google Maps using this property's address/location.
-   *
-   * There is no Lagos fallback or headquarters location here.
-   */
-  const propertyAddress = Array.from(
-    new Set(
-      [property.address, property.location]
-        .map((value) =>
-          String(value || '').trim()
-        )
-        .filter(Boolean)
-    )
-  ).join(', ');
-
-  if (propertyAddress) {
-    return `https://www.google.com/maps?q=${encodeURIComponent(
-      propertyAddress
-    )}&z=17&output=embed`;
-  }
-
-  /*
-   * No valid location information:
-   * do not display a map.
-   */
-  return '';
+  return `https://www.google.com/maps?q=${encodeURIComponent(
+    publicLocation
+  )}&z=13&output=embed`;
 }
 
+function findPreferredUnit(
+  property:
+    PropertyRecord
+):
+  PropertyUnit | null {
+  if (
+    !property.units
+      .length
+  ) {
+    return null;
+  }
+
+  return (
+    property.units.find(
+      (
+        unit
+      ) =>
+        getAvailableQuantity(
+          unit
+        ) > 0
+    ) ||
+    property.units[0] ||
+    null
+  );
+}
+
+/* =========================================
+   PAGE
+========================================= */
+
 export default function PropertyDetailsPage() {
-  const params = useParams<{ id: string }>();
+  const params =
+    useParams<{
+      id:
+        string;
+    }>();
 
-  const propertyId = String(params?.id || '').trim();
+  const propertyId =
+    String(
+      params?.id ||
+      ''
+    ).trim();
 
-  const [property, setProperty] =
-    useState<Property | null>(null);
+  const [
+    property,
+    setProperty,
+  ] =
+    useState<
+      PropertyRecord | null
+    >(null);
 
-  const [selectedUnitIndex, setSelectedUnitIndex] =
-    useState(0);
+  const [
+    selectedUnitId,
+    setSelectedUnitId,
+  ] =
+    useState('');
 
-  const [loading, setLoading] = useState(true);
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
-  const [error, setError] = useState('');
+  const [
+    error,
+    setError,
+  ] =
+    useState('');
 
-  const [pageUrl, setPageUrl] = useState('');
+  /* =======================================
+     LOAD PROPERTY
+  ======================================= */
 
   useEffect(() => {
-    setPageUrl(window.location.href);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
+    let active =
+      true;
 
     async function loadProperty() {
-      if (!propertyId) {
-        setError('The property ID is missing.');
-        setLoading(false);
+      if (
+        !propertyId
+      ) {
+        setError(
+          'The listing ID is missing.'
+        );
+
+        setLoading(
+          false
+        );
+
         return;
       }
 
-      setLoading(true);
-      setError('');
+      setLoading(
+        true
+      );
+
+      setError(
+        ''
+      );
 
       try {
-        const propertyReference = doc(
-          db,
-          'properties',
-          propertyId
-        );
+        const snapshot =
+          await getDoc(
+            doc(
+              db,
+              'properties',
+              propertyId
+            )
+          );
 
-        const propertySnapshot = await getDoc(
-          propertyReference
-        );
-
-        if (!propertySnapshot.exists()) {
-          if (active) {
-            setProperty(null);
+        if (
+          !snapshot.exists()
+        ) {
+          if (
+            active
+          ) {
             setError(
-              'This property could not be found.'
+              'This listing could not be found.'
             );
           }
 
           return;
         }
 
-        const propertyData =
-          propertySnapshot.data() as Omit<
-            Property,
-            'id'
-          >;
+        const normalized =
+          normalizeProperty(
+            snapshot.id,
+            snapshot.data()
+          );
 
-        if (active) {
-          setProperty({
-            ...propertyData,
-            id: propertySnapshot.id,
-          });
+        if (
+          !isPublicProperty(
+            normalized
+          )
+        ) {
+          if (
+            active
+          ) {
+            setError(
+              'This listing is not currently available publicly.'
+            );
+          }
 
-          setSelectedUnitIndex(0);
+          return;
         }
-      } catch (loadError) {
+
+        const preferredUnit =
+          findPreferredUnit(
+            normalized
+          );
+
+        if (
+          active
+        ) {
+          setProperty(
+            normalized
+          );
+
+          setSelectedUnitId(
+            preferredUnit?.id ||
+            ''
+          );
+        }
+      } catch (
+        loadError
+      ) {
         console.error(
-          'Failed to load property:',
+          'Failed to load listing:',
           loadError
         );
 
-        if (active) {
-          setProperty(null);
+        if (
+          active
+        ) {
+          setProperty(
+            null
+          );
+
           setError(
-            'The property could not be loaded. Please try again.'
+            'Living Spring could not load this listing. Please try again.'
           );
         }
       } finally {
-        if (active) {
-          setLoading(false);
+        if (
+          active
+        ) {
+          setLoading(
+            false
+          );
         }
       }
     }
@@ -398,79 +531,145 @@ export default function PropertyDetailsPage() {
     void loadProperty();
 
     return () => {
-      active = false;
+      active =
+        false;
     };
-  }, [propertyId]);
+  }, [
+    propertyId,
+  ]);
 
-  const units = useMemo(() => {
-    return Array.isArray(property?.units)
-      ? property.units
-      : [];
-  }, [property]);
+  /* =======================================
+     DERIVED DATA
+  ======================================= */
 
   const selectedUnit =
-    units[selectedUnitIndex] || units[0];
+    useMemo(() => {
+      if (
+        !property ||
+        !property.units
+          .length
+      ) {
+        return null;
+      }
 
-  const galleryMedia = useMemo(() => {
-    const propertyMedia = Array.isArray(
-      property?.media
-    )
-      ? property.media
-      : [];
+      if (
+        selectedUnitId
+      ) {
+        const selected =
+          property.units.find(
+            (
+              unit
+            ) =>
+              unit.id ===
+              selectedUnitId
+          );
 
-    const unitMedia = Array.isArray(
-      selectedUnit?.media
-    )
-      ? selectedUnit.media
-      : [];
+        if (
+          selected
+        ) {
+          return selected;
+        }
+      }
 
-    return cleanMediaList([
-      ...propertyMedia,
-      property?.videoUrl,
-      ...unitMedia,
-      selectedUnit?.videoUrl,
+      return findPreferredUnit(
+        property
+      );
+    }, [
+      property,
+      selectedUnitId,
     ]);
-  }, [property, selectedUnit]);
 
-  const amenities = useMemo(() => {
-    if (!Array.isArray(property?.amenities)) {
-      return [];
-    }
+  const galleryMedia =
+    useMemo(() => {
+      if (
+        !property
+      ) {
+        return [];
+      }
 
-    return property.amenities
-      .map((amenity) =>
-        String(amenity || '').trim()
-      )
-      .filter(Boolean);
-  }, [property]);
+      return cleanMediaList([
+        property.coverImage,
 
-  const landmarks = useMemo(() => {
-    if (!Array.isArray(property?.landmarks)) {
-      return [];
-    }
+        ...property.media,
 
-    return property.landmarks
-      .map(getLandmarkText)
-      .filter(Boolean);
-  }, [property]);
+        ...(selectedUnit
+          ?.media ||
+          []),
+      ]);
+    }, [
+      property,
+      selectedUnit,
+    ]);
 
-  const mapEmbedUrl = useMemo(() => {
-    return buildPropertyMapUrl(property);
-  }, [property]);
+  const amenities =
+    useMemo(() => {
+      if (
+        !property
+      ) {
+        return [];
+      }
 
-  if (loading) {
+      return Array.from(
+        new Set(
+          [
+            ...property
+              .amenities,
+
+            ...(selectedUnit
+              ?.amenities ||
+              []),
+          ]
+            .map(
+              (
+                item
+              ) =>
+                item.trim()
+            )
+            .filter(
+              Boolean
+            )
+        )
+      );
+    }, [
+      property,
+      selectedUnit,
+    ]);
+
+  /* =======================================
+     STATES
+  ======================================= */
+
+  if (
+    loading
+  ) {
     return (
       <>
         <Navbar />
 
-        <main className={styles.statePage}>
-          <div className={styles.loadingCard}>
-            <div className={styles.spinner} />
+        <main
+          className={
+            styles.statePage
+          }
+        >
+          <div
+            className={
+              styles.stateCard
+            }
+          >
+            <div
+              className={
+                styles.spinner
+              }
+            />
 
-            <h1>Loading property...</h1>
+            <h1>
+              Loading listing...
+            </h1>
 
             <p>
-              Please wait while we retrieve the
+              Please wait while
+              Living Spring
+              retrieves the
               property information.
             </p>
           </div>
@@ -481,28 +680,48 @@ export default function PropertyDetailsPage() {
     );
   }
 
-  if (error || !property) {
+  if (
+    error ||
+    !property
+  ) {
     return (
       <>
         <Navbar />
 
-        <main className={styles.statePage}>
-          <div className={styles.errorCard}>
-            <Building2 size={44} />
+        <main
+          className={
+            styles.statePage
+          }
+        >
+          <div
+            className={
+              styles.stateCard
+            }
+          >
+            <Building2
+              size={42}
+              aria-hidden="true"
+            />
 
-            <h1>Property unavailable</h1>
+            <h1>
+              Listing unavailable
+            </h1>
 
             <p>
               {error ||
-                'The requested property could not be found.'}
+                'This listing is not currently available.'}
             </p>
 
             <Link
               href="/properties"
               className="btn btn-gold"
             >
-              <ArrowLeft size={18} />
-              Browse Properties
+              <ArrowLeft
+                size={18}
+                aria-hidden="true"
+              />
+
+              Browse Listings
             </Link>
           </div>
         </main>
@@ -512,79 +731,261 @@ export default function PropertyDetailsPage() {
     );
   }
 
-  const selectedPrice = formatPrice(
-    selectedUnit?.price,
-    selectedUnit?.pricePeriod
-  );
+  /* =======================================
+     PROPERTY-SPECIFIC VALUES
+  ======================================= */
 
-  const whatsappNumber = String(
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ||
-      ''
-  ).replace(/\D/g, '');
+  const isLand =
+    isLandProperty(
+      property
+    );
 
-  const contactEmail =
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL || '';
+  const serviceLabel =
+    formatPropertyService(
+      property.serviceType
+    );
 
-  const contactPhone =
-    process.env.NEXT_PUBLIC_CONTACT_PHONE || '';
+  const sourceLabel =
+    formatListingSource(
+      property.listingSource
+    );
+
+  const publicLocation =
+    getPublicLocation(
+      property
+    );
+
+  const totalAvailable =
+    getTotalAvailableUnits(
+      property
+    );
+
+  const startingPrice =
+    getStartingPrice(
+      property
+    );
+
+  const selectedPrice =
+    selectedUnit
+      ? getUnitDisplayPrice(
+          selectedUnit,
+          property.serviceType
+        )
+      : startingPrice;
+
+  const priceText =
+    selectedPrice
+      ? formatPrice(
+          selectedPrice.amount,
+          selectedPrice.period
+        )
+      : 'Price on request';
 
   const propertyName =
-    property.title || 'Living Springs Property';
+    property.title ||
+    `${serviceLabel} Listing`;
 
-  const unitName =
-    selectedUnit?.unitType ||
-    property.propertyType ||
+  const selectedUnitName =
+    selectedUnit
+      ?.unitType ||
     '';
 
+  const backHref =
+    getBackRoute(
+      property.serviceType
+    );
+
+  const backLabel =
+    getBackLabel(
+      property.serviceType
+    );
+
+  const mapEmbedUrl =
+    buildPublicMapUrl(
+      property
+    );
+
+  const calendarId =
+    property.serviceType ===
+    'shortlet'
+      ? buildAvailabilityCalendarId({
+          propertyId:
+            property.id,
+
+          unitId:
+            selectedUnit
+              ?.id,
+
+          propertyName,
+
+          unitName:
+            selectedUnitName,
+
+          locationSlug:
+            property
+              .locationSlug,
+        })
+      : '';
+
+  const configuredSiteUrl =
+    siteConfig.siteUrl
+      .replace(
+        /\/+$/,
+        ''
+      );
+
+  const pageUrl =
+    configuredSiteUrl
+      ? `${configuredSiteUrl}/properties/${property.id}`
+      : '';
+
+  const enquiryType =
+    property.serviceType ===
+    'shortlet'
+      ? 'stay'
+      : isLand
+        ? 'land'
+        : property.serviceType ===
+            'hostel'
+          ? 'hostel'
+          : 'property';
+
   const whatsappMessage = [
-    'Hello Living Springs Rentals,',
+    'Hello Living Spring,',
     '',
-    `I am interested in: ${propertyName}`,
-    unitName ? `Unit: ${unitName}` : '',
-    `Price: ${selectedPrice}`,
-    property.location
-      ? `Location: ${property.location}`
+    `I am interested in this ${enquiryType}: ${propertyName}`,
+    selectedUnitName
+      ? `Option: ${selectedUnitName}`
+      : '',
+    `Price: ${priceText}`,
+    publicLocation
+      ? `Location: ${publicLocation}`
       : '',
     '',
-    'Please let me know if it is still available and when I can inspect it.',
-    pageUrl ? `Property page: ${pageUrl}` : '',
+    property.serviceType ===
+    'shortlet'
+      ? 'Please confirm availability for my intended stay.'
+      : 'Please confirm availability and let me know how I can arrange an inspection.',
+    pageUrl
+      ? `Listing: ${pageUrl}`
+      : '',
   ]
-    .filter(Boolean)
-    .join('\n');
+    .filter(
+      Boolean
+    )
+    .join(
+      '\n'
+    );
 
-  const whatsappHref = whatsappNumber
-    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        whatsappMessage
-      )}`
-    : '';
+  const whatsappHref =
+    getWhatsAppHref(
+      whatsappMessage
+    );
 
-  const contactHref = `/contact?property=${encodeURIComponent(
-    propertyName
-  )}&unit=${encodeURIComponent(
-    unitName
-  )}&price=${encodeURIComponent(selectedPrice)}`;
+  const contactHref =
+    `/contact?property=${encodeURIComponent(
+      propertyName
+    )}&unit=${encodeURIComponent(
+      selectedUnitName
+    )}&price=${encodeURIComponent(
+      priceText
+    )}`;
+
+  const bookingHref =
+    `/book?propertyId=${encodeURIComponent(
+      property.id
+    )}${
+      selectedUnit
+        ?.id
+        ? `&unitId=${encodeURIComponent(
+            selectedUnit.id
+          )}`
+        : ''
+    }`;
 
   return (
     <>
       <Navbar />
 
-      <main className={styles.page}>
-        <section className={styles.propertyHeader}>
+      <main
+        className={
+          styles.page
+        }
+      >
+        {/* =================================
+            HERO
+        ================================== */}
+
+        <section
+          className={
+            styles.hero
+          }
+        >
           <div className="container">
             <Link
-              href="/properties"
-              className={styles.backLink}
+              href={
+                backHref
+              }
+              className={
+                styles.backLink
+              }
             >
-              <ArrowLeft size={17} />
-              Back to Properties
+              <ArrowLeft
+                size={17}
+                aria-hidden="true"
+              />
+
+              {backLabel}
             </Link>
 
-            <div className={styles.headerGrid}>
-              <div className={styles.headerContent}>
-                <div className={styles.badges}>
-                  <span>
-                    {property.listingPurpose ||
-                      'For Rent'}
+            <div
+              className={
+                styles.heroGrid
+              }
+            >
+              <div
+                className={
+                  styles.heroMain
+                }
+              >
+                <div
+                  className={
+                    styles.badges
+                  }
+                >
+                  <span
+                    className={
+                      styles.badge
+                    }
+                  >
+                    {serviceLabel}
+                  </span>
+
+                  {property.serviceType ===
+                    'property' &&
+                    property.listingPurpose && (
+                      <span
+                        className={
+                          styles.badge
+                        }
+                      >
+                        {
+                          property.listingPurpose
+                        }
+                      </span>
+                    )}
+
+                  <span
+                    className={
+                      styles.sourceBadge
+                    }
+                  >
+                    <ShieldCheck
+                      size={13}
+                      aria-hidden="true"
+                    />
+
+                    {sourceLabel}
                   </span>
 
                   {property.featured && (
@@ -598,279 +999,988 @@ export default function PropertyDetailsPage() {
                   )}
                 </div>
 
-                <h1>{propertyName}</h1>
+                <h1>
+                  {propertyName}
+                </h1>
 
-                <p className={styles.location}>
-                  <MapPin size={18} />
+                <p
+                  className={
+                    styles.heroLocation
+                  }
+                >
+                  <MapPin
+                    size={18}
+                    aria-hidden="true"
+                  />
 
-                  {property.address ||
-                    property.location ||
-                    'Location available on request'}
+                  {publicLocation}
                 </p>
               </div>
 
-              <div className={styles.headerPrice}>
-                <span>
-                  {selectedUnit
-                    ? 'Selected unit price'
-                    : 'Property price'}
+              <div
+                className={
+                  styles.heroPricePanel
+                }
+              >
+                <span
+                  className={
+                    styles.priceKicker
+                  }
+                >
+                  {selectedUnitName
+                    ? selectedUnitName
+                    : isLand
+                      ? 'Land price'
+                      : 'Starting price'}
                 </span>
 
-                <strong>{selectedPrice}</strong>
+                <strong
+                  className={
+                    styles.price
+                  }
+                >
+                  {priceText}
+                </strong>
 
-                {unitName && <p>{unitName}</p>}
+                {selectedUnitName && (
+                  <span
+                    className={
+                      styles.priceUnit
+                    }
+                  >
+                    Selected option
+                  </span>
+                )}
+
+                {property.units
+                  .length >
+                  0 && (
+                  <span
+                    className={
+                      totalAvailable >
+                      0
+                        ? styles.availabilityPill
+                        : styles.unavailablePill
+                    }
+                  >
+                    {totalAvailable >
+                    0
+                      ? property.serviceType ===
+                          'hostel'
+                        ? `${totalAvailable} available`
+                        : 'Available'
+                      : 'Confirm availability'}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </section>
 
-        <section className={styles.gallerySection}>
+        {/* =================================
+            GALLERY
+        ================================== */}
+
+        <section
+          className={
+            styles.gallerySection
+          }
+        >
           <div className="container">
             <MediaGallery
-              title={propertyName}
-              media={galleryMedia}
+              title={
+                propertyName
+              }
+              media={
+                galleryMedia
+              }
             />
           </div>
         </section>
 
-        <section className={styles.detailsSection}>
+        {/* =================================
+            CONTENT
+        ================================== */}
+
+        <section
+          className={
+            styles.contentSection
+          }
+        >
           <div className="container">
-            <div className={styles.detailsGrid}>
-              <div className={styles.mainColumn}>
-                {units.length > 0 && (
+            <div
+              className={
+                styles.layout
+              }
+            >
+              <div
+                className={
+                  styles.mainColumn
+                }
+              >
+                {/* =========================
+                    UNIT / ROOM OPTIONS
+                ========================== */}
+
+                {!isLand &&
+                  property.units
+                    .length >
+                    0 && (
+                    <section
+                      className={
+                        styles.sectionCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.sectionHeading
+                        }
+                      >
+                        <span>
+                          {property.serviceType ===
+                          'hostel'
+                            ? 'Room Types'
+                            : property.serviceType ===
+                                'shortlet'
+                              ? 'Stay Options'
+                              : 'Property Units'}
+                        </span>
+
+                        <h2>
+                          {property.serviceType ===
+                          'hostel'
+                            ? 'Choose an available room type'
+                            : property.serviceType ===
+                                'shortlet'
+                              ? 'Choose your accommodation option'
+                              : 'Choose a unit'}
+                        </h2>
+
+                        <p>
+                          Select an option
+                          to update the
+                          price, media and
+                          details shown on
+                          this page.
+                        </p>
+                      </div>
+
+                      <div
+                        className={
+                          styles.optionsGrid
+                        }
+                      >
+                        {property.units.map(
+                          (
+                            unit,
+                            index
+                          ) => {
+                            const unitPrice =
+                              getUnitDisplayPrice(
+                                unit,
+                                property.serviceType
+                              );
+
+                            const availableQuantity =
+                              getAvailableQuantity(
+                                unit
+                              );
+
+                            const quantity =
+                              unit.quantity ??
+                              1;
+
+                            const active =
+                              selectedUnit?.id ===
+                              unit.id;
+
+                            return (
+                              <button
+                                type="button"
+                                key={
+                                  unit.id ||
+                                  index
+                                }
+                                className={`${styles.optionCard} ${
+                                  active
+                                    ? styles.activeOption
+                                    : ''
+                                }`}
+                                onClick={() =>
+                                  setSelectedUnitId(
+                                    unit.id
+                                  )
+                                }
+                              >
+                                <div
+                                  className={
+                                    styles.optionTop
+                                  }
+                                >
+                                  <div>
+                                    <span>
+                                      {property.serviceType ===
+                                      'hostel'
+                                        ? 'Room type'
+                                        : 'Option'}{' '}
+                                      {index +
+                                        1}
+                                    </span>
+
+                                    <h3>
+                                      {unit.unitType ||
+                                        'Accommodation'}
+                                    </h3>
+                                  </div>
+
+                                  <span
+                                    className={`${styles.optionStatus} ${
+                                      availableQuantity >
+                                      0
+                                        ? styles.availableStatus
+                                        : styles.unavailableStatus
+                                    }`}
+                                  >
+                                    {formatStatus(
+                                      unit.status
+                                    )}
+                                  </span>
+                                </div>
+
+                                <strong
+                                  className={
+                                    styles.optionPrice
+                                  }
+                                >
+                                  {unitPrice
+                                    ? formatPrice(
+                                        unitPrice.amount,
+                                        unitPrice.period
+                                      )
+                                    : 'Price on request'}
+                                </strong>
+
+                                {property.serviceType ===
+                                  'hostel' && (
+                                  <p
+                                    className={
+                                      styles.optionQuantity
+                                    }
+                                  >
+                                    {availableQuantity}{' '}
+                                    of{' '}
+                                    {quantity}{' '}
+                                    currently
+                                    available
+                                  </p>
+                                )}
+
+                                <div
+                                  className={
+                                    styles.optionMeta
+                                  }
+                                >
+                                  {unit.bedrooms >
+                                    0 && (
+                                    <span>
+                                      <BedDouble
+                                        size={15}
+                                        aria-hidden="true"
+                                      />
+
+                                      {
+                                        unit.bedrooms
+                                      }{' '}
+                                      bed
+                                    </span>
+                                  )}
+
+                                  {unit.bathrooms >
+                                    0 && (
+                                    <span>
+                                      <Bath
+                                        size={15}
+                                        aria-hidden="true"
+                                      />
+
+                                      {
+                                        unit.bathrooms
+                                      }{' '}
+                                      bath
+                                    </span>
+                                  )}
+
+                                  {unit.maxGuests >
+                                    0 && (
+                                    <span>
+                                      <Users
+                                        size={15}
+                                        aria-hidden="true"
+                                      />
+
+                                      {
+                                        unit.maxGuests
+                                      }{' '}
+                                      guests
+                                    </span>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          }
+                        )}
+                      </div>
+
+                      {selectedUnit && (
+                        <div
+                          className={
+                            styles.unitDetails
+                          }
+                        >
+                          <div
+                            className={
+                              styles.unitDetailsGrid
+                            }
+                          >
+                            {selectedUnit.bedrooms >
+                              0 && (
+                              <div
+                                className={
+                                  styles.detailItem
+                                }
+                              >
+                                <BedDouble
+                                  size={20}
+                                  aria-hidden="true"
+                                />
+
+                                <span>
+                                  Bedrooms
+                                </span>
+
+                                <strong>
+                                  {
+                                    selectedUnit.bedrooms
+                                  }
+                                </strong>
+                              </div>
+                            )}
+
+                            {selectedUnit.bathrooms >
+                              0 && (
+                              <div
+                                className={
+                                  styles.detailItem
+                                }
+                              >
+                                <Bath
+                                  size={20}
+                                  aria-hidden="true"
+                                />
+
+                                <span>
+                                  Bathrooms
+                                </span>
+
+                                <strong>
+                                  {
+                                    selectedUnit.bathrooms
+                                  }
+                                </strong>
+                              </div>
+                            )}
+
+                            {selectedUnit.toilets >
+                              0 && (
+                              <div
+                                className={
+                                  styles.detailItem
+                                }
+                              >
+                                <Toilet
+                                  size={20}
+                                  aria-hidden="true"
+                                />
+
+                                <span>
+                                  Toilets
+                                </span>
+
+                                <strong>
+                                  {
+                                    selectedUnit.toilets
+                                  }
+                                </strong>
+                              </div>
+                            )}
+
+                            {selectedUnit.maxGuests >
+                              0 && (
+                              <div
+                                className={
+                                  styles.detailItem
+                                }
+                              >
+                                <Users
+                                  size={20}
+                                  aria-hidden="true"
+                                />
+
+                                <span>
+                                  Max Guests
+                                </span>
+
+                                <strong>
+                                  {
+                                    selectedUnit.maxGuests
+                                  }
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+
+                          {selectedUnit.description && (
+                            <div
+                              className={
+                                styles.unitDescription
+                              }
+                            >
+                              <h3>
+                                About this
+                                option
+                              </h3>
+
+                              <p>
+                                {
+                                  selectedUnit.description
+                                }
+                              </p>
+                            </div>
+                          )}
+
+                          {selectedUnit.inspectionNotes && (
+                            <div
+                              className={
+                                styles.notice
+                              }
+                            >
+                              <CheckCircle2
+                                size={19}
+                                aria-hidden="true"
+                              />
+
+                              <div>
+                                <strong>
+                                  Inspection
+                                  information
+                                </strong>
+
+                                <p>
+                                  {
+                                    selectedUnit.inspectionNotes
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  )}
+
+                {/* =========================
+                    LAND DETAILS
+                ========================== */}
+
+                {isLand && (
                   <section
-                    className={styles.contentCard}
+                    className={
+                      styles.sectionCard
+                    }
                   >
                     <div
-                      className={styles.sectionHeading}
+                      className={
+                        styles.sectionHeading
+                      }
                     >
-                      <span>Available Options</span>
+                      <span>
+                        Land Information
+                      </span>
 
                       <h2>
-                        Choose a room or unit
+                        Key land details
                       </h2>
 
                       <p>
-                        Select a unit to view its
-                        information, price, pictures
-                        and video.
+                        Important land
+                        information is
+                        separated from
+                        normal building
+                        specifications.
                       </p>
                     </div>
 
-                    <div className={styles.unitsGrid}>
-                      {units.map((unit, index) => {
-                        const isSelected =
-                          selectedUnitIndex === index;
+                    <div
+                      className={
+                        styles.landGrid
+                      }
+                    >
+                      <div
+                        className={
+                          styles.landFact
+                        }
+                      >
+                        <Maximize2
+                          size={22}
+                          aria-hidden="true"
+                        />
 
-                        const status = String(
-                          unit.status || 'available'
-                        ).toLowerCase();
+                        <span>
+                          Land size
+                        </span>
 
-                        return (
-                          <button
-                            type="button"
-                            key={
-                              unit.id ||
-                              `${unit.unitType}-${index}`
-                            }
-                            className={`${
-                              styles.unitCard
-                            } ${
-                              isSelected
-                                ? styles.activeUnit
-                                : ''
-                            }`}
-                            onClick={() =>
-                              setSelectedUnitIndex(
-                                index
-                              )
-                            }
-                          >
-                            <div
-                              className={
-                                styles.unitCardHeader
-                              }
-                            >
-                              <div>
-                                <span>
-                                  Unit {index + 1}
-                                </span>
+                        <strong>
+                          {formatLandSize(
+                            property.landSize,
+                            property.landSizeUnit
+                          ) ||
+                            'Ask Living Spring'}
+                        </strong>
+                      </div>
 
-                                <h3>
-                                  {unit.unitType ||
-                                    'Property Unit'}
-                                </h3>
-                              </div>
+                      <div
+                        className={
+                          styles.landFact
+                        }
+                      >
+                        <FileText
+                          size={22}
+                          aria-hidden="true"
+                        />
 
-                              <span
-                                className={`${
-                                  styles.unitStatus
-                                } ${
-                                  status ===
-                                  'available'
-                                    ? styles.availableStatus
-                                    : styles.unavailableStatus
-                                }`}
-                              >
-                                {formatStatus(
-                                  unit.status
-                                )}
-                              </span>
-                            </div>
+                        <span>
+                          Title /
+                          Document
+                        </span>
 
-                            <strong
-                              className={
-                                styles.unitPrice
-                              }
-                            >
-                              {formatPrice(
-                                unit.price,
-                                unit.pricePeriod
-                              )}
-                            </strong>
+                        <strong>
+                          {property.titleDocument ||
+                            'Available on request'}
+                        </strong>
+                      </div>
 
-                            <div
-                              className={
-                                styles.unitMeta
-                              }
-                            >
-                              {unit.bedrooms !==
-                                undefined && (
-                                <span>
-                                  <BedDouble
-                                    size={16}
-                                  />
-                                  {unit.bedrooms} Bed
-                                </span>
-                              )}
+                      <div
+                        className={
+                          styles.landFact
+                        }
+                      >
+                        <Building2
+                          size={22}
+                          aria-hidden="true"
+                        />
 
-                              {unit.bathrooms !==
-                                undefined && (
-                                <span>
-                                  <Bath size={16} />
-                                  {unit.bathrooms}{' '}
-                                  Bath
-                                </span>
-                              )}
+                        <span>
+                          Purpose
+                        </span>
 
-                              {unit.toilets !==
-                                undefined && (
-                                <span>
-                                  <Toilet size={16} />
-                                  {unit.toilets}{' '}
-                                  Toilet
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
+                        <strong>
+                          {property.listingPurpose ||
+                            'Enquire'}
+                        </strong>
+                      </div>
                     </div>
-
-                    {selectedUnit?.description && (
-                      <div
-                        className={
-                          styles.unitDescription
-                        }
-                      >
-                        <h3>About this unit</h3>
-
-                        <p>
-                          {
-                            selectedUnit.description
-                          }
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedUnit?.inspectionInfo && (
-                      <div
-                        className={
-                          styles.inspectionNote
-                        }
-                      >
-                        <CheckCircle2 size={20} />
-
-                        <div>
-                          <strong>
-                            Inspection information
-                          </strong>
-
-                          <p>
-                            {
-                              selectedUnit.inspectionInfo
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </section>
                 )}
 
+                {/* =========================
+                    SHORT-LET RATES
+                ========================== */}
+
+                {property.serviceType ===
+                  'shortlet' &&
+                  selectedUnit && (
+                    <section
+                      className={
+                        styles.sectionCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.sectionHeading
+                        }
+                      >
+                        <span>
+                          Stay Pricing
+                        </span>
+
+                        <h2>
+                          Rates & stay
+                          information
+                        </h2>
+                      </div>
+
+                      <div
+                        className={
+                          styles.shortletRates
+                        }
+                      >
+                        {selectedUnit.nightlyRate >
+                          0 && (
+                          <div
+                            className={
+                              styles.rate
+                            }
+                          >
+                            <span>
+                              Per night
+                            </span>
+
+                            <strong>
+                              {formatPrice(
+                                selectedUnit.nightlyRate,
+                                'night'
+                              )}
+                            </strong>
+                          </div>
+                        )}
+
+                        {selectedUnit.weeklyRate >
+                          0 && (
+                          <div
+                            className={
+                              styles.rate
+                            }
+                          >
+                            <span>
+                              Per week
+                            </span>
+
+                            <strong>
+                              {formatPrice(
+                                selectedUnit.weeklyRate,
+                                'week'
+                              )}
+                            </strong>
+                          </div>
+                        )}
+
+                        {selectedUnit.monthlyRate >
+                          0 && (
+                          <div
+                            className={
+                              styles.rate
+                            }
+                          >
+                            <span>
+                              Per month
+                            </span>
+
+                            <strong>
+                              {formatPrice(
+                                selectedUnit.monthlyRate,
+                                'month'
+                              )}
+                            </strong>
+                          </div>
+                        )}
+
+                        {selectedUnit.cleaningFee >
+                          0 && (
+                          <div
+                            className={
+                              styles.rate
+                            }
+                          >
+                            <span>
+                              Cleaning fee
+                            </span>
+
+                            <strong>
+                              {new Intl.NumberFormat(
+                                'en-NG',
+                                {
+                                  style:
+                                    'currency',
+                                  currency:
+                                    'NGN',
+                                  maximumFractionDigits:
+                                    0,
+                                }
+                              ).format(
+                                selectedUnit.cleaningFee
+                              )}
+                            </strong>
+                          </div>
+                        )}
+
+                        {selectedUnit.cautionDeposit >
+                          0 && (
+                          <div
+                            className={
+                              styles.rate
+                            }
+                          >
+                            <span>
+                              Caution deposit
+                            </span>
+
+                            <strong>
+                              {new Intl.NumberFormat(
+                                'en-NG',
+                                {
+                                  style:
+                                    'currency',
+                                  currency:
+                                    'NGN',
+                                  maximumFractionDigits:
+                                    0,
+                                }
+                              ).format(
+                                selectedUnit.cautionDeposit
+                              )}
+                            </strong>
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={
+                          styles.stayRules
+                        }
+                      >
+                        <div>
+                          <Clock3
+                            size={20}
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            Check-in
+                          </span>
+
+                          <strong>
+                            {property.checkInTime ||
+                              'Confirm time'}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <Clock3
+                            size={20}
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            Check-out
+                          </span>
+
+                          <strong>
+                            {property.checkOutTime ||
+                              'Confirm time'}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <CalendarDays
+                            size={20}
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            Minimum stay
+                          </span>
+
+                          <strong>
+                            {Math.max(
+                              1,
+                              property.minStayNights ||
+                                1
+                            )}{' '}
+                            {Math.max(
+                              1,
+                              property.minStayNights ||
+                                1
+                            ) ===
+                            1
+                              ? 'night'
+                              : 'nights'}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <Users
+                            size={20}
+                            aria-hidden="true"
+                          />
+
+                          <span>
+                            Guests
+                          </span>
+
+                          <strong>
+                            Up to{' '}
+                            {selectedUnit.maxGuests ||
+                              property.maxGuests ||
+                              '—'}
+                          </strong>
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                {/* =========================
+                    OVERVIEW
+                ========================== */}
+
                 <section
-                  className={styles.contentCard}
+                  className={
+                    styles.sectionCard
+                  }
                 >
                   <div
-                    className={styles.sectionHeading}
+                    className={
+                      styles.sectionHeading
+                    }
                   >
-                    <span>Property Overview</span>
-                    <h2>About this property</h2>
+                    <span>
+                      Overview
+                    </span>
+
+                    <h2>
+                      About this{' '}
+                      {property.serviceType ===
+                      'shortlet'
+                        ? 'stay'
+                        : property.serviceType ===
+                            'hostel'
+                          ? 'hostel'
+                          : isLand
+                            ? 'land'
+                            : 'property'}
+                    </h2>
                   </div>
 
-                  <p className={styles.description}>
+                  <p
+                    className={
+                      styles.description
+                    }
+                  >
                     {property.description ||
-                      'Contact Living Springs for complete information about this property.'}
+                      `Contact Living Spring for complete information about this ${enquiryType}.`}
                   </p>
 
                   <div
-                    className={styles.propertyFacts}
+                    className={
+                      styles.factsGrid
+                    }
                   >
-                    <div>
-                      <Building2 size={21} />
+                    <div
+                      className={
+                        styles.fact
+                      }
+                    >
+                      <Building2
+                        size={20}
+                        aria-hidden="true"
+                      />
 
-                      <span>Property Type</span>
+                      <span>
+                        Type
+                      </span>
 
                       <strong>
                         {property.propertyType ||
-                          property.category ||
-                          'Property'}
+                          serviceLabel}
                       </strong>
                     </div>
 
-                    <div>
-                      <MapPin size={21} />
+                    <div
+                      className={
+                        styles.fact
+                      }
+                    >
+                      <MapPin
+                        size={20}
+                        aria-hidden="true"
+                      />
 
-                      <span>Location</span>
+                      <span>
+                        Location
+                      </span>
 
                       <strong>
-                        {property.location ||
-                          property.address ||
-                          'Contact Agent'}
+                        {publicLocation}
                       </strong>
                     </div>
 
-                    <div>
-                      <Building2 size={21} />
+                    <div
+                      className={
+                        styles.fact
+                      }
+                    >
+                      <ShieldCheck
+                        size={20}
+                        aria-hidden="true"
+                      />
 
-                      <span>Listing</span>
+                      <span>
+                        Listing Source
+                      </span>
 
                       <strong>
-                        {property.listingPurpose ||
-                          'For Rent'}
+                        {sourceLabel}
                       </strong>
                     </div>
+
+                    {property.serviceType ===
+                      'property' && (
+                      <div
+                        className={
+                          styles.fact
+                        }
+                      >
+                        <FileText
+                          size={20}
+                          aria-hidden="true"
+                        />
+
+                        <span>
+                          Listing Purpose
+                        </span>
+
+                        <strong>
+                          {property.listingPurpose ||
+                            'Enquire'}
+                        </strong>
+                      </div>
+                    )}
                   </div>
                 </section>
 
-                {amenities.length > 0 && (
+                {/* =========================
+                    AMENITIES
+                ========================== */}
+
+                {amenities.length >
+                  0 && (
                   <section
-                    className={styles.contentCard}
+                    className={
+                      styles.sectionCard
+                    }
                   >
                     <div
-                      className={styles.sectionHeading}
+                      className={
+                        styles.sectionHeading
+                      }
                     >
-                      <span>Property Features</span>
-                      <h2>Amenities available</h2>
+                      <span>
+                        Features
+                      </span>
+
+                      <h2>
+                        Amenities &
+                        facilities
+                      </h2>
                     </div>
 
                     <div
@@ -879,17 +1989,25 @@ export default function PropertyDetailsPage() {
                       }
                     >
                       {amenities.map(
-                        (amenity, index) => (
+                        (
+                          amenity
+                        ) => (
                           <div
-                            key={`${amenity}-${index}`}
+                            key={
+                              amenity
+                            }
                             className={
                               styles.amenity
                             }
                           >
                             <CheckCircle2
-                              size={18}
+                              size={17}
+                              aria-hidden="true"
                             />
-                            <span>{amenity}</span>
+
+                            <span>
+                              {amenity}
+                            </span>
                           </div>
                         )
                       )}
@@ -897,17 +2015,31 @@ export default function PropertyDetailsPage() {
                   </section>
                 )}
 
-                {landmarks.length > 0 && (
+                {/* =========================
+                    LANDMARKS
+                ========================== */}
+
+                {property
+                  .nearbyLandmarks
+                  .length >
+                  0 && (
                   <section
-                    className={styles.contentCard}
+                    className={
+                      styles.sectionCard
+                    }
                   >
                     <div
-                      className={styles.sectionHeading}
+                      className={
+                        styles.sectionHeading
+                      }
                     >
-                      <span>Nearby Places</span>
+                      <span>
+                        Nearby
+                      </span>
 
                       <h2>
-                        Places close to the property
+                        Landmarks &
+                        useful places
                       </h2>
                     </div>
 
@@ -916,13 +2048,28 @@ export default function PropertyDetailsPage() {
                         styles.landmarksList
                       }
                     >
-                      {landmarks.map(
-                        (landmark, index) => (
+                      {property.nearbyLandmarks.map(
+                        (
+                          landmark
+                        ) => (
                           <div
-                            key={`${landmark}-${index}`}
+                            key={
+                              landmark
+                            }
+                            className={
+                              styles.landmark
+                            }
                           >
-                            <MapPin size={18} />
-                            <span>{landmark}</span>
+                            <MapPin
+                              size={17}
+                              aria-hidden="true"
+                            />
+
+                            <span>
+                              {
+                                landmark
+                              }
+                            </span>
                           </div>
                         )
                       )}
@@ -930,29 +2077,100 @@ export default function PropertyDetailsPage() {
                   </section>
                 )}
 
+                {/* =========================
+                    SHORT-LET AVAILABILITY
+                ========================== */}
+
+                {property.serviceType ===
+                  'shortlet' &&
+                  calendarId && (
+                    <section
+                      className={
+                        styles.sectionCard
+                      }
+                    >
+                      <div
+                        className={
+                          styles.sectionHeading
+                        }
+                      >
+                        <span>
+                          Availability
+                        </span>
+
+                        <h2>
+                          Check your
+                          intended dates
+                        </h2>
+
+                        <p>
+                          Dates marked
+                          reserved, booked,
+                          blocked or under
+                          maintenance are
+                          unavailable.
+                        </p>
+                      </div>
+
+                      <div
+                        className={
+                          styles.calendarWrap
+                        }
+                      >
+                        <AvailabilityCalendar
+                          calendarId={
+                            calendarId
+                          }
+                          overallStatus={
+                            selectedUnit
+                              ?.status
+                          }
+                        />
+                      </div>
+                    </section>
+                  )}
+
+                {/* =========================
+                    MAP
+                ========================== */}
+
                 {mapEmbedUrl && (
                   <section
-                    className={styles.contentCard}
+                    className={
+                      styles.sectionCard
+                    }
                   >
                     <div
-                      className={styles.sectionHeading}
+                      className={
+                        styles.sectionHeading
+                      }
                     >
-                      <span>Property Location</span>
+                      <span>
+                        Location
+                      </span>
 
                       <h2>
-                        View this property on the map
+                        {property.showFullAddress
+                          ? 'Property location'
+                          : 'Approximate area'}
                       </h2>
 
                       <p>
-                        This map belongs specifically
-                        to {propertyName}.
+                        {property.showFullAddress
+                          ? 'The advertiser has allowed the exact property location to be displayed.'
+                          : 'The exact address is withheld publicly. The map shows the general listing area.'}
                       </p>
                     </div>
 
-                    <div className={styles.mapFrame}>
+                    <div
+                      className={
+                        styles.mapFrame
+                      }
+                    >
                       <iframe
-                        key={mapEmbedUrl}
-                        src={mapEmbedUrl}
+                        src={
+                          mapEmbedUrl
+                        }
                         title={`${propertyName} location`}
                         loading="lazy"
                         allowFullScreen
@@ -963,22 +2181,48 @@ export default function PropertyDetailsPage() {
                 )}
               </div>
 
-              <aside className={styles.sidebar}>
+              {/* =============================
+                  SIDEBAR
+              ============================== */}
+
+              <aside
+                className={
+                  styles.sidebar
+                }
+              >
                 <div
-                  className={styles.contactCard}
+                  className={
+                    styles.contactCard
+                  }
                 >
                   <span
-                    className={styles.contactKicker}
+                    className={
+                      styles.contactKicker
+                    }
                   >
-                    Interested in this property?
+                    {property.serviceType ===
+                    'shortlet'
+                      ? 'Interested in this stay?'
+                      : isLand
+                        ? 'Interested in this land?'
+                        : property.serviceType ===
+                            'hostel'
+                          ? 'Interested in this hostel?'
+                          : 'Interested in this property?'}
                   </span>
 
-                  <h2>Book an inspection</h2>
+                  <h2>
+                    {property.serviceType ===
+                    'shortlet'
+                      ? 'Request your stay'
+                      : 'Arrange an inspection'}
+                  </h2>
 
                   <p>
-                    Contact Living Springs to confirm
-                    availability and arrange a suitable
-                    inspection time.
+                    {property.serviceType ===
+                    'shortlet'
+                      ? 'Confirm your dates and availability with Living Spring before making any travel plans.'
+                      : 'Confirm current availability with Living Spring and arrange a suitable inspection time.'}
                   </p>
 
                   <div
@@ -986,81 +2230,204 @@ export default function PropertyDetailsPage() {
                       styles.selectedSummary
                     }
                   >
-                    <span>Property</span>
-                    <strong>{propertyName}</strong>
+                    <div
+                      className={
+                        styles.summaryRow
+                      }
+                    >
+                      <span>
+                        Listing
+                      </span>
 
-                    {unitName && (
-                      <>
-                        <span>Selected Unit</span>
-                        <strong>{unitName}</strong>
-                      </>
+                      <strong>
+                        {propertyName}
+                      </strong>
+                    </div>
+
+                    {selectedUnitName && (
+                      <div
+                        className={
+                          styles.summaryRow
+                        }
+                      >
+                        <span>
+                          Selected
+                        </span>
+
+                        <strong>
+                          {
+                            selectedUnitName
+                          }
+                        </strong>
+                      </div>
                     )}
 
-                    <span>Price</span>
-                    <strong>{selectedPrice}</strong>
+                    <div
+                      className={
+                        styles.summaryRow
+                      }
+                    >
+                      <span>
+                        Price
+                      </span>
+
+                      <strong>
+                        {priceText}
+                      </strong>
+                    </div>
+
+                    <div
+                      className={
+                        styles.summaryRow
+                      }
+                    >
+                      <span>
+                        Location
+                      </span>
+
+                      <strong>
+                        {publicLocation}
+                      </strong>
+                    </div>
                   </div>
+
+                  {property.serviceType ===
+                    'shortlet' && (
+                    <Link
+                      href={
+                        bookingHref
+                      }
+                      className={
+                        styles.bookingButton
+                      }
+                    >
+                      <CalendarDays
+                        size={18}
+                        aria-hidden="true"
+                      />
+
+                      Request Booking
+                    </Link>
+                  )}
 
                   {whatsappHref && (
                     <a
-                      href={whatsappHref}
+                      href={
+                        whatsappHref
+                      }
                       target="_blank"
                       rel="noreferrer"
                       className={
                         styles.whatsappButton
                       }
                     >
-                      <FaWhatsapp />
-                      Continue on WhatsApp
+                      <FaWhatsapp
+                        aria-hidden="true"
+                      />
+
+                      WhatsApp Living
+                      Spring
                     </a>
                   )}
 
                   <Link
-                    href={contactHref}
-                    className={styles.emailButton}
+                    href={
+                      contactHref
+                    }
+                    className={
+                      styles.enquiryButton
+                    }
                   >
-                    <Mail size={18} />
-                    Send Email Inquiry
+                    <Mail
+                      size={18}
+                      aria-hidden="true"
+                    />
+
+                    Send Enquiry
                   </Link>
 
-                  {contactEmail && (
+                  {siteConfig
+                    .contactPhone && (
                     <a
-                      href={`mailto:${contactEmail}`}
+                      href={`tel:${siteConfig.contactPhone}`}
                       className={
                         styles.directContact
                       }
                     >
-                      <Mail size={17} />
-                      {contactEmail}
+                      <Phone
+                        size={17}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        siteConfig.contactPhone
+                      }
                     </a>
                   )}
 
-                  {contactPhone && (
+                  {siteConfig
+                    .contactEmail && (
                     <a
-                      href={`tel:${contactPhone}`}
+                      href={`mailto:${siteConfig.contactEmail}`}
                       className={
                         styles.directContact
                       }
                     >
-                      <Phone size={17} />
-                      {contactPhone}
+                      <Mail
+                        size={17}
+                        aria-hidden="true"
+                      />
+
+                      {
+                        siteConfig.contactEmail
+                      }
                     </a>
                   )}
 
                   <div
                     className={
-                      styles.contactNotice
+                      styles.notice
                     }
                   >
-                    <CheckCircle2 size={18} />
+                    <ShieldCheck
+                      size={18}
+                      aria-hidden="true"
+                    />
 
                     <p>
-                      Always confirm the inspection
-                      before travelling to the
-                      property.
+                      Confirm
+                      availability,
+                      inspection or
+                      booking details
+                      before travelling
+                      or making any
+                      arrangement.
                     </p>
                   </div>
                 </div>
               </aside>
+            </div>
+
+            {/* =============================
+                SIMILAR LISTINGS
+            ============================== */}
+
+            <div
+              className={
+                styles.similarSection
+              }
+            >
+              <SimilarProperties
+                currentPropertyId={
+                  property.id
+                }
+                category={
+                  property.category
+                }
+                serviceType={
+                  property.serviceType
+                }
+              />
             </div>
           </div>
         </section>

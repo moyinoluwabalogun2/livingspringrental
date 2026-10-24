@@ -1,142 +1,294 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowRight, Building2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import PropertyCard from '@/components/PropertyCard';
-import { collection, db, getDocs, limit, orderBy, query } from '@/lib/firebase';
-import styles from './FeaturedProperties.module.css';
+import {
+  useEffect,
+  useState,
+} from 'react';
 
-type FeaturedPropertyUnit = {
-  id?: string;
-  unitType?: string;
-  price?: number;
-  pricePeriod?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  toilets?: number;
-  status?: string;
-};
+import Link
+  from 'next/link';
 
-type FeaturedProperty = {
-  id: string;
-  title?: string;
-  category?: string;
-  listingPurpose?: string;
-  location?: string;
-  address?: string;
-  propertyType?: string;
-  description?: string;
-  media?: string[];
-  images?: string[];
-  featured?: boolean;
-  units?: FeaturedPropertyUnit[];
-  price?: number;
-  pricePeriod?: string;
-  createdAt?: unknown;
-};
+import {
+  ArrowRight,
+  Building2,
+} from 'lucide-react';
 
-function toNumber(value: unknown): number | undefined {
-  if (value === undefined || value === null || value === '') return undefined;
+import {
+  collection,
+  getDocs,
+  limit,
+  query,
+  where,
+} from 'firebase/firestore';
 
-  const numericValue = Number(value);
+import {
+  db,
+} from '@/lib/firebase';
 
-  return Number.isFinite(numericValue) ? numericValue : undefined;
-}
+import {
+  isPublicProperty,
+  normalizeProperty,
+  type PropertyRecord,
+} from '@/lib/property';
+
+import PropertyCard
+  from '@/components/PropertyCard';
+
+import styles
+  from './FeaturedProperties.module.css';
 
 export default function FeaturedProperties() {
-  const router = useRouter();
+  const [
+    properties,
+    setProperties,
+  ] =
+    useState<
+      PropertyRecord[]
+    >([]);
 
-  const [properties, setProperties] = useState<FeaturedProperty[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
 
   useEffect(() => {
-    const fetchFeatured = async () => {
+    let active =
+      true;
+
+    async function loadFeatured() {
       try {
-        const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'), limit(6));
-        const snap = await getDocs(q);
+        /*
+         * Fetch a small pool,
+         * filter private listings,
+         * then display three.
+         */
+        const featuredSnapshot =
+          await getDocs(
+           query(
+  collection(
+    db,
+    'properties'
+  ),
 
-        const data = snap.docs.map((document) => {
-          const rawData = document.data();
+  where(
+    'lifecycleStatus',
+    '==',
+    'published'
+  ),
 
-          const units = Array.isArray(rawData.units)
-            ? rawData.units.map((unit) => ({
-                ...unit,
-                price: toNumber(unit.price),
-              }))
-            : undefined;
+  where(
+    'featured',
+    '==',
+    true
+  ),
 
-          return {
-            id: document.id,
-            ...rawData,
-            price: toNumber(rawData.price),
-            units,
-          } as FeaturedProperty;
-        });
+  limit(8)
+)
+          );
 
-        const featured = data.filter((property) => property.featured === true);
+        let result =
+          featuredSnapshot.docs
+            .map(
+              (
+                document
+              ) =>
+                normalizeProperty(
+                  document.id,
+                  document.data()
+                )
+            )
+            .filter(
+              isPublicProperty
+            )
+            .slice(
+              0,
+              3
+            );
 
-        setProperties(featured.length ? featured.slice(0, 6) : data.slice(0, 6));
+        if (
+          result.length ===
+          0
+        ) {
+          const fallbackSnapshot =
+            await getDocs(
+              query(
+  collection(
+    db,
+    'properties'
+  ),
+
+  where(
+    'lifecycleStatus',
+    '==',
+    'published'
+  ),
+
+  limit(8)
+)
+            );
+
+          result =
+            fallbackSnapshot.docs
+              .map(
+                (
+                  document
+                ) =>
+                  normalizeProperty(
+                    document.id,
+                    document.data()
+                  )
+              )
+              .filter(
+                isPublicProperty
+              )
+              .slice(
+                0,
+                3
+              );
+        }
+
+        if (active) {
+          setProperties(
+            result
+          );
+        }
       } catch (error) {
-        console.error('Error fetching featured properties:', error);
+        console.error(
+          'Failed to load featured listings:',
+          error
+        );
       } finally {
-        setLoading(false);
+        if (active) {
+          setLoading(
+            false
+          );
+        }
       }
-    };
+    }
 
-    fetchFeatured();
+    void loadFeatured();
+
+    return () => {
+      active =
+        false;
+    };
   }, []);
 
   return (
-    <section className={styles.section}>
+    <section
+      className={`${styles.section} content-auto`}
+    >
       <div className="container">
-        <div className={styles.header}>
+        <div
+          className={
+            styles.header
+          }
+        >
           <div>
-            <span className={styles.eyebrow}>
-              <Building2 size={17} />
-              Featured listings
+            <span
+              className={
+                styles.eyebrow
+              }
+            >
+              <Building2
+                size={16}
+              />
+
+              Featured Listings
             </span>
 
-            <h2>Premium properties currently on the market.</h2>
+            <h2>
+              Explore current
+              Living Spring
+              opportunities.
+            </h2>
 
             <p>
-              Explore selected residential, commercial, and land opportunities managed through
-              Living Springs.
+              A selected view of
+              current published
+              property and
+              accommodation
+              listings.
             </p>
           </div>
 
-          <Link href="/properties" className="btn btn-outline">
+          <Link
+            href="/properties"
+            className="btn btn-outline"
+          >
             View All Properties
-            <ArrowRight size={18} />
+
+            <ArrowRight
+              size={17}
+            />
           </Link>
         </div>
 
         {loading ? (
-          <div className={styles.skeletonGrid}>
-            {[1, 2, 3].map((item) => (
-              <div key={item} className={styles.skeletonCard} />
-            ))}
+          <div
+            className={
+              styles.skeletonGrid
+            }
+          >
+            <div
+              className={
+                styles.skeletonCard
+              }
+            />
+
+            <div
+              className={
+                styles.skeletonCard
+              }
+            />
+
+            <div
+              className={
+                styles.skeletonCard
+              }
+            />
           </div>
-        ) : properties.length ? (
+        ) : properties.length >
+          0 ? (
           <div className="grid">
-            {properties.map((property) => (
-             <PropertyCard
-  key={property.id}
-  property={property}
-/>
-            ))}
+            {properties.map(
+              (
+                property
+              ) => (
+                <PropertyCard
+                  key={
+                    property.id
+                  }
+                  property={
+                    property
+                  }
+                />
+              )
+            )}
           </div>
         ) : (
-          <div className={styles.empty}>
-            <h3>No properties added yet</h3>
+          <div
+            className={
+              styles.empty
+            }
+          >
+            <h3>
+              New listings are
+              being prepared.
+            </h3>
 
             <p>
-              Once properties are added from the admin dashboard, featured listings will appear here.
+              Contact Living Spring
+              for current
+              availability.
             </p>
 
-            <Link href="/admin/login" className="btn btn-primary">
-              Go to Admin
+            <Link
+              href="/contact"
+              className="btn btn-dark"
+            >
+              Make an Enquiry
             </Link>
           </div>
         )}

@@ -1,0 +1,561 @@
+.shell {
+  min-height: 100vh;
+
+  display: grid;
+
+  grid-template-columns:
+    270px minmax(0, 1fr);
+
+  background:
+    #f7f5ef;
+}
+
+.sidebar {
+  position: sticky;
+
+  top: 0;
+
+  height: 100vh;
+
+  display: flex;
+
+  flex-direction: column;
+
+  overflow-y: auto;
+
+  border-right:
+    1px solid
+    rgba(255, 255, 255, 0.08);
+
+  background:
+    #07111f;
+
+  color: white;
+
+  z-index: 40;
+}
+
+.sidebarHeader {
+  display: flex;
+
+  align-items: center;
+
+  justify-content:
+    space-between;
+
+  padding:
+    1.4rem 1.25rem 1.1rem;
+}
+
+.brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.75rem;
+
+  color: white;
+
+  text-decoration: none;
+}
+
+.brandMark {
+  width: 42px;
+  height: 42px;
+
+  display: grid;
+
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  border:
+    1px solid
+    rgba(212, 175, 55, 0.46);
+
+  border-radius: 13px;
+
+  background:
+    rgba(212, 175, 55, 0.1);
+
+  color:
+    #d4af37;
+
+  font-size: 0.75rem;
+
+  font-weight: 900;
+
+  letter-spacing: 0.07em;
+}
+
+.brand > span:last-child {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 0.12rem;
+}
+
+.brand strong {
+  font-size: 0.88rem;
+
+  font-weight: 850;
+
+  letter-spacing:
+    -0.015em;
+}
+
+.brand small {
+  color:
+    rgba(255, 255, 255, 0.5);
+
+  font-size: 0.63rem;
+}
+
+.mobileClose {
+  display: none;
+
+  border: 0;
+
+  background: transparent;
+
+  color: white;
+
+  cursor: pointer;
+}
+
+.navigation {
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 0.35rem;
+
+  padding:
+    0.7rem 0.85rem;
+}
+
+.navLabel {
+  margin:
+    1rem 0.7rem 0.4rem;
+
+  color:
+    rgba(255, 255, 255, 0.35);
+
+  font-size: 0.58rem;
+
+  font-weight: 900;
+
+  letter-spacing: 0.12em;
+
+  text-transform: uppercase;
+}
+
+.navItem,
+.addListing {
+  min-height: 47px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.75rem;
+
+  border-radius: 12px;
+
+  padding:
+    0 0.85rem;
+
+  color:
+    rgba(255, 255, 255, 0.7);
+
+  font-size: 0.78rem;
+
+  font-weight: 750;
+
+  text-decoration: none;
+
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.navItem:hover {
+  background:
+    rgba(255, 255, 255, 0.055);
+
+  color: white;
+}
+
+.navItemActive {
+  background:
+    rgba(212, 175, 55, 0.12);
+
+  color:
+    #f4d77b;
+}
+
+.navItemActive::before {
+  content: '';
+
+  width: 3px;
+  height: 19px;
+
+  margin-left:
+    -0.85rem;
+
+  border-radius: 999px;
+
+  background:
+    #d4af37;
+}
+
+.addListing {
+  margin-top: 0.15rem;
+
+  justify-content: center;
+
+  border:
+    1px solid
+    rgba(212, 175, 55, 0.3);
+
+  background:
+    #d4af37;
+
+  color:
+    #07111f;
+}
+
+.addListing:hover {
+  transform:
+    translateY(-1px);
+
+  background:
+    #e0bf55;
+}
+
+.sidebarFooter {
+  display: grid;
+
+  gap: 0.45rem;
+
+  border-top:
+    1px solid
+    rgba(255, 255, 255, 0.075);
+
+  padding:
+    1rem;
+}
+
+.account {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.65rem;
+
+  margin-bottom: 0.45rem;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.07);
+
+  border-radius: 13px;
+
+  padding:
+    0.7rem;
+
+  background:
+    rgba(255, 255, 255, 0.035);
+}
+
+.accountAvatar {
+  width: 34px;
+  height: 34px;
+
+  display: grid;
+
+  place-items: center;
+
+  flex: 0 0 auto;
+
+  border-radius: 10px;
+
+  background:
+    rgba(212, 175, 55, 0.15);
+
+  color:
+    #e2c45c;
+
+  font-size: 0.72rem;
+
+  font-weight: 900;
+}
+
+.accountText {
+  min-width: 0;
+
+  display: grid;
+
+  gap: 0.1rem;
+}
+
+.accountText strong {
+  font-size: 0.7rem;
+}
+
+.accountText small {
+  overflow: hidden;
+
+  color:
+    rgba(255, 255, 255, 0.42);
+
+  font-size: 0.58rem;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.footerAction {
+  width: 100%;
+
+  min-height: 39px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 0.55rem;
+
+  border: 0;
+
+  border-radius: 10px;
+
+  padding:
+    0 0.7rem;
+
+  background: transparent;
+
+  color:
+    rgba(255, 255, 255, 0.6);
+
+  font: inherit;
+
+  font-size: 0.68rem;
+
+  font-weight: 750;
+
+  text-align: left;
+
+  text-decoration: none;
+
+  cursor: pointer;
+}
+
+.footerAction:hover {
+  background:
+    rgba(255, 255, 255, 0.05);
+
+  color: white;
+}
+
+.workspace {
+  min-width: 0;
+}
+
+.content {
+  min-height: 100vh;
+}
+
+.mobileHeader {
+  display: none;
+}
+
+.authLoading {
+  min-height: 100vh;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 0.8rem;
+
+  background:
+    #f7f5ef;
+
+  color:
+    #667085;
+}
+
+.authLoading p {
+  font-size: 0.78rem;
+
+  font-weight: 700;
+}
+
+.overlay {
+  display: none;
+}
+
+@media (
+  max-width: 900px
+) {
+  .shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width:
+      min(
+        310px,
+        88vw
+      );
+
+    transform:
+      translateX(-105%);
+
+    transition:
+      transform 220ms ease;
+
+    box-shadow:
+      24px 0 70px
+      rgba(0, 0, 0, 0.25);
+  }
+
+  .sidebarOpen {
+    transform:
+      translateX(0);
+  }
+
+  .mobileClose {
+    display: grid;
+
+    place-items: center;
+  }
+
+  .overlay {
+    position: fixed;
+
+    inset: 0;
+
+    display: block;
+
+    border: 0;
+
+    background:
+      rgba(3, 9, 17, 0.55);
+
+    backdrop-filter:
+      blur(2px);
+
+    z-index: 35;
+  }
+
+  .mobileHeader {
+    position: sticky;
+
+    top: 0;
+
+    height: 62px;
+
+    display: grid;
+
+    grid-template-columns:
+      40px 1fr 40px;
+
+    align-items: center;
+
+    gap: 0.5rem;
+
+    border-bottom:
+      1px solid
+      rgba(7, 17, 31, 0.08);
+
+    padding:
+      0 1rem;
+
+    background:
+      rgba(247, 245, 239, 0.96);
+
+    backdrop-filter:
+      blur(10px);
+
+    z-index: 25;
+  }
+
+  .mobileHeader button,
+  .mobileHeader > a:last-child {
+    width: 38px;
+    height: 38px;
+
+    display: grid;
+
+    place-items: center;
+
+    border:
+      1px solid
+      rgba(7, 17, 31, 0.09);
+
+    border-radius: 10px;
+
+    background: white;
+
+    color:
+      #07111f;
+
+    cursor: pointer;
+  }
+
+  .mobileHeader > a:nth-child(2) {
+    color:
+      #07111f;
+
+    font-size: 0.82rem;
+
+    font-weight: 850;
+
+    text-align: center;
+
+    text-decoration: none;
+  }
+
+  .mobileHeader > a:nth-child(2) span {
+    margin-left: 0.25rem;
+
+    color:
+      #a98620;
+  }
+
+  .content {
+    min-height:
+      calc(
+        100vh - 62px
+      );
+  }
+}
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+  .sidebar,
+  .navItem,
+  .addListing {
+    transition: none;
+  }
+}

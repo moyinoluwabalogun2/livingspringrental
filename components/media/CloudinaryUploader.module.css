@@ -1,0 +1,329 @@
+.uploader {
+  width: 100%;
+  padding: 24px;
+  border: 1px solid rgba(18, 35, 52, 0.12);
+  border-radius: 22px;
+  background: #fffdf8;
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.heading h3 {
+  margin: 0 0 6px;
+  color: #102335;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.heading p {
+  max-width: 620px;
+  margin: 0;
+  color: #66717d;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.counts {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.counts span {
+  padding: 7px 10px;
+  border: 1px solid rgba(18, 35, 52, 0.1);
+  border-radius: 999px;
+  background: white;
+  color: #596571;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.uploadActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.uploadButton,
+.secondaryButton {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease,
+    border-color 160ms ease;
+}
+
+.uploadButton {
+  border: 1px solid #102335;
+  background: #102335;
+  color: white;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(18, 35, 52, 0.18);
+  background: white;
+  color: #102335;
+}
+
+.uploadButton:hover:not(:disabled),
+.secondaryButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.uploadButton:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.rules {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  color: #7a6a4a;
+  font-size: 0.79rem;
+  line-height: 1.55;
+}
+
+.rules svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.progressCard {
+  margin-top: 18px;
+  padding: 15px;
+  border: 1px solid rgba(18, 35, 52, 0.1);
+  border-radius: 14px;
+  background: white;
+}
+
+.progressTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #102335;
+  font-size: 0.82rem;
+}
+
+.progressTop span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  margin: 11px 0 8px;
+  border-radius: 999px;
+  background: rgba(18, 35, 52, 0.08);
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: inherit;
+  background: #b7904b;
+  transition: width 160ms ease;
+}
+
+.progressCard small {
+  display: block;
+  overflow: hidden;
+  color: #73808a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spin {
+  animation: spin 0.85s linear infinite;
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(183, 144, 75, 0.1);
+  color: #69552f;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.message svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.mediaSection {
+  margin-top: 24px;
+}
+
+.mediaSection h4 {
+  margin: 0 0 12px;
+  color: #102335;
+  font-size: 0.9rem;
+}
+
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.videoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mediaCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(18, 35, 52, 0.1);
+  border-radius: 15px;
+  background: white;
+}
+
+.imagePreview {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-color: #edf0f2;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.videoPreview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0d1821;
+  object-fit: cover;
+}
+
+.mediaInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+}
+
+.mediaInfo > div {
+  min-width: 0;
+}
+
+.mediaInfo strong,
+.mediaInfo span {
+  display: block;
+}
+
+.mediaInfo strong {
+  overflow: hidden;
+  color: #172b3b;
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mediaInfo span {
+  min-height: 16px;
+  margin-top: 3px;
+  color: #7d8790;
+  font-size: 0.7rem;
+}
+
+.deleteButton {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(157, 49, 49, 0.15);
+  border-radius: 10px;
+  background: rgba(157, 49, 49, 0.06);
+  color: #943b3b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .uploader {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .heading {
+    flex-direction: column;
+  }
+
+  .counts {
+    width: 100%;
+  }
+
+  .uploadActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .uploadButton,
+  .secondaryButton {
+    width: 100%;
+    padding: 0 10px;
+  }
+
+  .imageGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .videoGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .uploadActions {
+    grid-template-columns: 1fr;
+  }
+
+  .imageGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+}

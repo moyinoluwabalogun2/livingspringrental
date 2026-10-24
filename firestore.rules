@@ -1,0 +1,211 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /*
+     * ============================================
+     * AUTH HELPERS
+     * ============================================
+     */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function adminPath() {
+      return /databases/$(database)/documents/admins/$(request.auth.uid);
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(adminPath())
+        && get(adminPath()).data.active == true
+        && (
+          get(adminPath()).data.role == 'owner'
+          || get(adminPath()).data.role == 'admin'
+        );
+    }
+
+    /*
+     * ============================================
+     * PROPERTY VALIDATION
+     * ============================================
+     */
+
+    function validServiceType(data) {
+      return data.serviceType == 'property'
+        || data.serviceType == 'hostel'
+        || data.serviceType == 'shortlet';
+    }
+
+    function validLifecycle(data) {
+      return data.lifecycleStatus == 'draft'
+        || data.lifecycleStatus == 'published'
+        || data.lifecycleStatus == 'archived';
+    }
+
+    function validProperty(data) {
+      return data.keys().hasAll([
+          'serviceType',
+          'lifecycleStatus',
+          'title',
+          'units'
+        ])
+        && validServiceType(data)
+        && validLifecycle(data)
+        && data.title is string
+        && data.title.size() <= 200
+        && data.units is list
+        && data.units.size() <= 100;
+    }
+
+    function publishedProperty() {
+      return resource.data.lifecycleStatus == 'published';
+    }
+
+    /*
+     * ============================================
+     * ADMIN ROLE RECORDS
+     * ============================================
+     *
+     * Users can only read their own admin profile.
+     *
+     * Nobody can create/change admin roles from
+     * the client application.
+     *
+     * Admin roles are managed through the
+     * Firebase console.
+     */
+
+    match /admins/{adminId} {
+      allow read:
+        if signedIn()
+        && request.auth.uid == adminId;
+
+      allow create, update, delete:
+        if false;
+    }
+
+    /*
+     * ============================================
+     * PROPERTIES
+     * ============================================
+     *
+     * PUBLIC:
+     * published listings only.
+     *
+     * ADMIN:
+     * full read/write access.
+     */
+
+    match /properties/{propertyId} {
+
+      allow get:
+        if isAdmin()
+        || publishedProperty();
+
+      allow list:
+        if isAdmin()
+        || (
+          publishedProperty()
+          && request.query.limit != null
+          && request.query.limit <= 60
+        );
+
+      allow create:
+        if isAdmin()
+        && validProperty(
+          request.resource.data
+        );
+
+      allow update:
+        if isAdmin()
+        && validProperty(
+          request.resource.data
+        );
+
+      allow delete:
+        if isAdmin();
+    }
+
+    /*
+     * ============================================
+     * PUBLIC AVAILABILITY
+     * ============================================
+     *
+     * These documents contain NO private notes.
+     */
+
+    match /availabilityCalendars/{calendarId} {
+
+      allow read:
+        if false;
+
+      allow write:
+        if false;
+
+      match /days/{dateId} {
+
+        allow get:
+          if true;
+
+        allow list:
+          if request.query.limit != null
+          && request.query.limit <= 62;
+
+        allow create, update:
+          if isAdmin()
+          && request.resource.data.keys().hasOnly([
+            'date',
+            'status',
+            'updatedAt'
+          ])
+          && request.resource.data.date is string
+          && request.resource.data.date == dateId
+          && (
+            request.resource.data.status == 'reserved'
+            || request.resource.data.status == 'booked'
+            || request.resource.data.status == 'blocked'
+            || request.resource.data.status == 'maintenance'
+          );
+
+        allow delete:
+          if isAdmin();
+      }
+    }
+
+    /*
+     * ============================================
+     * PRIVATE AVAILABILITY DATA
+     * ============================================
+     *
+     * Guest references and internal notes live
+     * here.
+     */
+
+    match /availabilityAdmin/{calendarId} {
+
+      allow read, write:
+        if false;
+
+      match /days/{dateId} {
+        allow read, create, update, delete:
+          if isAdmin();
+      }
+    }
+
+    /*
+     * ============================================
+     * EVERYTHING ELSE
+     * ============================================
+     *
+     * Closed unless explicitly opened above.
+     */
+
+    match /{document=**} {
+      allow read, write:
+        if false;
+    }
+  }
+}

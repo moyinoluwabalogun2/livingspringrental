@@ -1,80 +1,281 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { Mail, MapPin, Phone, Send } from 'lucide-react';
-import { FaWhatsapp, FaInstagram, FaFacebookF } from 'react-icons/fa';
-import styles from './Footer.module.css';
-import livingSpringsLogo from "../assets/living-springs-logo.png";
+import Image
+  from 'next/image';
+
+import Link
+  from 'next/link';
+
+import {
+  Building2,
+  Mail,
+  MapPin,
+  Phone,
+} from 'lucide-react';
+
+import {
+  FaWhatsapp,
+} from 'react-icons/fa';
+
+import styles
+  from './Footer.module.css';
+
+import livingSpringsLogo
+  from '../assets/living-springs-logo.png';
+
+import {
+  getWhatsAppHref,
+  siteConfig,
+} from '@/lib/site';
 
 export default function Footer() {
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '';
+  const whatsappHref =
+    getWhatsAppHref(
+      'Hello Living Spring, I would like to make an enquiry.'
+    );
 
   return (
-    <footer className={styles.footer}>
-      <div className="container">
-        <div className={styles.footerGrid}>
-          <div className={styles.brand}>
+    <footer
+      className={
+        styles.footer
+      }
+    >
+      <div
+        className="container"
+      >
+        <div
+          className={
+            styles.topRow
+          }
+        >
+          <div
+            className={
+              styles.brand
+            }
+          >
             <Image
-              src={livingSpringsLogo}
-              alt="Living Springs Rentals"
-              width={210}
-              height={80}
-              unoptimized
-              priority
-              className={styles.logo}
+              src={
+                livingSpringsLogo
+              }
+              alt="Living Spring"
+              width={184}
+              height={72}
+              sizes="184px"
+              quality={80}
+              className={
+                styles.logo
+              }
             />
 
-            <p>
-              Helping clients find rental homes, apartments and property opportunities with
-              clear information and direct support.
+            <p
+              className={
+                styles.descriptor
+              }
+            >
+              Properties •
+              Hostels •
+              Short-Lets
             </p>
 
-            <div className={styles.socials}>
-              <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">
-                <FaWhatsapp />
+            <h2
+              className={
+                styles.brandTitle
+              }
+            >
+              Property opportunities,
+              clearly presented.
+            </h2>
+
+            <p
+              className={
+                styles.summary
+              }
+            >
+              Discover property,
+              hostel accommodation
+              and short-let stays
+              across Nigeria with
+              direct Living Spring
+              support.
+            </p>
+
+            {whatsappHref && (
+              <a
+                href={
+                  whatsappHref
+                }
+                target="_blank"
+                rel="noreferrer"
+                className={
+                  styles.whatsapp
+                }
+              >
+                <FaWhatsapp
+                  aria-hidden="true"
+                />
+
+                Chat on WhatsApp
               </a>
-              <a href="#" aria-label="Instagram">
-                <FaInstagram />
-              </a>
-              <a href="#" aria-label="Facebook">
-                <FaFacebookF />
-              </a>
+            )}
+          </div>
+
+          <div
+            className={
+              styles.linksGrid
+            }
+          >
+            <div
+              className={
+                styles.column
+              }
+            >
+              <h3>
+                Explore
+              </h3>
+
+              <Link
+                href="/properties"
+              >
+                Properties
+              </Link>
+
+              <Link
+                href="/hostel"
+              >
+                Hostels
+              </Link>
+
+              <Link
+                href="/shortlet"
+              >
+                Short-Lets
+              </Link>
+
+              <Link
+                href="/about"
+              >
+                About Living Spring
+              </Link>
             </div>
-          </div>
 
-          <div className={styles.column}>
-            <h3>Explore</h3>
-            <Link href="/">Home</Link>
-            <Link href="/properties">Properties</Link>
-            <Link href="/about">About</Link>
-            <Link href="/contact">Contact</Link>
-          </div>
+            <div
+              className={
+                styles.column
+              }
+            >
+              <h3>
+                Property Types
+              </h3>
 
-          <div className={styles.column}>
-            <h3>Property Types</h3>
-            <Link href="/properties?category=Residential">Residential</Link>
-            <Link href="/properties?category=Commercial">Commercial</Link>
-            <Link href="/properties?category=Land">Land</Link>
-          </div>
+              <Link
+                href="/properties?category=Residential"
+              >
+                Residential
+              </Link>
 
-          <div className={styles.column}>
-            <h3>Contact</h3>
-            <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noreferrer">
-              <Phone size={16} /> WhatsApp Agent
-            </a>
-            <a href="mailto:bolsimfarmss@gmail.com">
-              <Mail size={16} /> Email Us
-            </a>
-            <Link href="/contact">
-              <Send size={16} /> Request Inspection
-            </Link>
-            <span>
-              <MapPin size={16} />  Nigeria
-            </span>
+              <Link
+                href="/properties?category=Commercial"
+              >
+                Commercial
+              </Link>
+
+              <Link
+                href="/properties?category=Land"
+              >
+                Land
+              </Link>
+
+              <Link
+                href="/book"
+              >
+                Short-Let Booking
+              </Link>
+            </div>
+
+            <div
+              className={
+                styles.column
+              }
+            >
+              <h3>
+                Contact
+              </h3>
+
+              <Link
+                href="/contact"
+              >
+                Send an Enquiry
+              </Link>
+
+              <span>
+                <MapPin
+                  size={16}
+                  aria-hidden="true"
+                />
+
+                {
+                  siteConfig.region
+                }
+              </span>
+
+              {siteConfig
+                .contactPhone && (
+                <a
+                  href={`tel:${siteConfig.contactPhone}`}
+                >
+                  <Phone
+                    size={16}
+                    aria-hidden="true"
+                  />
+
+                  {
+                    siteConfig.contactPhone
+                  }
+                </a>
+              )}
+
+              {siteConfig
+                .contactEmail && (
+                <a
+                  href={`mailto:${siteConfig.contactEmail}`}
+                >
+                  <Mail
+                    size={16}
+                    aria-hidden="true"
+                  />
+
+                  {
+                    siteConfig.contactEmail
+                  }
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className={styles.bottom}>
-          <p>© {new Date().getFullYear()} Living Springs Rentals. All rights reserved.</p>
+        <div
+          className={
+            styles.bottom
+          }
+        >
+          <p>
+            ©{' '}
+            {
+              new Date()
+                .getFullYear()
+            }{' '}
+            Living Spring.
+            All rights reserved.
+          </p>
+
+          <p>
+            <Building2
+              size={14}
+              aria-hidden="true"
+            />
+
+            Properties &
+            Accommodation
+            across Nigeria
+          </p>
         </div>
       </div>
     </footer>

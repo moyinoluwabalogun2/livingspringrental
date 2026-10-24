@@ -1,34 +1,157 @@
-import emailjs from 'emailjs-com';
+import emailjs
+  from '@emailjs/browser';
 
-export const sendInquiryEmail = async (inquiryData: any) => {
-  const templateParams = {
-    to_email: 'admin@livingsprings.com',
-    from_name: inquiryData.name,
-    from_email: inquiryData.email,
-    phone: inquiryData.phoneNumber,
-    property: inquiryData.propertyTitle,
-    unit: inquiryData.unitType || 'N/A',
-    price: inquiryData.price ? `₦${inquiryData.price.toLocaleString()}` : 'N/A',
-    inspection_date: inquiryData.preferredInspectionDate,
-    message: inquiryData.message,
-  };
+type InquiryData = {
+  name: string;
 
-  try {
-    const response = await emailjs.send(
-      process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-      process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-      templateParams,
-      process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-    );
-    return { success: true, response };
-  } catch (error) {
-    console.error('Email sending failed:', error);
-    return { success: false, error };
-  }
+  email: string;
+
+  phoneNumber: string;
+
+  propertyTitle: string;
+
+  unitType?: string;
+
+  price?: number;
+
+  pricePeriod?: string;
+
+  preferredInspectionDate?: string;
+
+  message?: string;
 };
 
-export const getWhatsAppMessage = (inquiryData: any) => {
-  return `Hello,
+function formatInquiryPrice(
+  price?: number,
+  pricePeriod?: string
+) {
+  if (
+    !price ||
+    price <= 0
+  ) {
+    return 'Contact for price';
+  }
+
+  const formatted =
+    new Intl.NumberFormat(
+      'en-NG',
+      {
+        style: 'currency',
+
+        currency: 'NGN',
+
+        maximumFractionDigits:
+          0,
+      }
+    ).format(price);
+
+  if (
+    !pricePeriod ||
+    pricePeriod ===
+      'one-time'
+  ) {
+    return formatted;
+  }
+
+  return `${formatted}/${pricePeriod}`;
+}
+
+export const sendInquiryEmail =
+  async (
+    inquiryData:
+      InquiryData
+  ) => {
+    const contactEmail =
+      process.env
+        .NEXT_PUBLIC_CONTACT_EMAIL ||
+      'bolsimfarmss@gmail.com';
+
+    const templateParams = {
+      to_email:
+        contactEmail,
+
+      from_name:
+        inquiryData.name,
+
+      from_email:
+        inquiryData.email,
+
+      phone:
+        inquiryData.phoneNumber,
+
+      property:
+        inquiryData.propertyTitle,
+
+      unit:
+        inquiryData.unitType ||
+        'N/A',
+
+      price:
+        formatInquiryPrice(
+          inquiryData.price,
+          inquiryData.pricePeriod
+        ),
+
+      inspection_date:
+        inquiryData.preferredInspectionDate ||
+        'Not specified',
+
+      message:
+        inquiryData.message ||
+        'No additional message provided.',
+    };
+
+    try {
+      const response =
+        await emailjs.send(
+          process.env
+            .NEXT_PUBLIC_EMAILJS_SERVICE_ID ||
+            '',
+
+          process.env
+            .NEXT_PUBLIC_EMAILJS_TEMPLATE_ID ||
+            '',
+
+          templateParams,
+
+          process.env
+            .NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ||
+            ''
+        );
+
+      return {
+        success:
+          true,
+
+        response,
+      };
+    } catch (error) {
+      console.error(
+        'Living Spring email sending failed:',
+        error
+      );
+
+      return {
+        success:
+          false,
+
+        error,
+      };
+    }
+  };
+
+export const getWhatsAppMessage =
+  (
+    inquiryData:
+      InquiryData
+  ) => {
+    const formattedPrice =
+      formatInquiryPrice(
+        inquiryData.price,
+        inquiryData.pricePeriod
+      );
+
+    return `Hello Living Spring,
 
 My name is ${inquiryData.name}.
 
@@ -36,12 +159,19 @@ I am interested in:
 
 Property: ${inquiryData.propertyTitle}
 Unit: ${inquiryData.unitType || 'Property'}
-Price: ₦${inquiryData.price?.toLocaleString() || 'Contact for price'}
+Price: ${formattedPrice}
 
 Preferred inspection date:
-${inquiryData.preferredInspectionDate || 'To be scheduled'}
+${
+  inquiryData.preferredInspectionDate ||
+  'To be scheduled'
+}
 
 Please contact me at ${inquiryData.phoneNumber} or ${inquiryData.email}.
 
-Message: ${inquiryData.message}`;
-};
+Message:
+${
+  inquiryData.message ||
+  'I would like more information about this property.'
+}`;
+  };

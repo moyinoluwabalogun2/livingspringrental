@@ -1,204 +1,715 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+
+import Link
+  from 'next/link';
+
+import {
+  Archive,
+  BedDouble,
+  Building2,
   Edit,
   Eye,
-  PlusCircle,
+  FileEdit,
+  MoonStar,
+  Plus,
   Search,
   Star,
   Trash2,
 } from 'lucide-react';
+
 import {
   collection,
-  db,
   deleteDoc,
   doc,
   getDocs,
+  limit,
+  query,
+} from 'firebase/firestore';
+
+import {
+  db,
 } from '@/lib/firebase';
-import styles from './page.module.css';
+
+import {
+  formatLifecycleStatus,
+  formatPropertyService,
+  normalizeProperty,
+  type PropertyRecord,
+} from '@/lib/property';
+
+import styles
+  from './page.module.css';
 
 export default function AdminPropertiesPage() {
-  const [properties, setProperties] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [keyword, setKeyword] = useState('');
+  const [
+    properties,
+    setProperties,
+  ] =
+    useState<
+      PropertyRecord[]
+    >([]);
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+  const [
+    keyword,
+    setKeyword,
+  ] =
+    useState('');
+
+  const [
+    serviceFilter,
+    setServiceFilter,
+  ] =
+    useState('all');
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] =
+    useState('all');
 
   useEffect(() => {
-    fetchProperties();
+    let active =
+      true;
+
+    async function loadProperties() {
+      try {
+        /*
+         * Performance guard:
+         * admin does not need an
+         * unlimited collection read.
+         *
+         * Proper cursor pagination
+         * will be added with the
+         * larger admin work.
+         */
+        const snapshot =
+          await getDocs(
+            query(
+              collection(
+                db,
+                'properties'
+              ),
+
+              limit(100)
+            )
+          );
+
+        const data =
+          snapshot.docs.map(
+            (
+              document
+            ) =>
+              normalizeProperty(
+                document.id,
+                document.data()
+              )
+          );
+
+        if (active) {
+          setProperties(
+            data
+          );
+        }
+      } catch (error) {
+        console.error(
+          'Failed to load properties:',
+          error
+        );
+      } finally {
+        if (active) {
+          setLoading(
+            false
+          );
+        }
+      }
+    }
+
+    void loadProperties();
+
+    return () => {
+      active =
+        false;
+    };
   }, []);
 
-  const fetchProperties = async () => {
-    try {
-      const snap = await getDocs(collection(db, 'properties'));
-      const data = snap.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
+  const filtered =
+    useMemo(() => {
+      const search =
+        keyword
+          .trim()
+          .toLowerCase();
 
-      setProperties(
-        data.sort((a: any, b: any) => {
-          const aTime = a.createdAt?.seconds || 0;
-          const bTime = b.createdAt?.seconds || 0;
-          return bTime - aTime;
-        })
+      return properties.filter(
+        (
+          property
+        ) => {
+          const text =
+            [
+              property.title,
+              property.location,
+              property.address,
+              property.propertyType,
+              property.category,
+              property.listingPurpose,
+            ]
+              .join(' ')
+              .toLowerCase();
+
+          const matchesSearch =
+            !search ||
+            text.includes(
+              search
+            );
+
+          const matchesService =
+            serviceFilter ===
+              'all' ||
+            property.serviceType ===
+              serviceFilter;
+
+          const matchesStatus =
+            statusFilter ===
+              'all' ||
+            property.lifecycleStatus ===
+              statusFilter;
+
+          return (
+            matchesSearch &&
+            matchesService &&
+            matchesStatus
+          );
+        }
       );
-    } catch (error) {
-      console.error('Error loading properties:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, [
+      keyword,
+      properties,
+      serviceFilter,
+      statusFilter,
+    ]);
 
-  const filteredProperties = useMemo(() => {
-    const text = keyword.trim().toLowerCase();
+  const deleteProperty =
+    async (
+      property:
+        PropertyRecord
+    ) => {
+      const confirmed =
+        window.confirm(
+          `Delete "${property.title}" permanently?`
+        );
 
-    if (!text) return properties;
+      if (!confirmed) {
+        return;
+      }
 
-    return properties.filter((property) =>
-      [
-        property.title,
-        property.location,
-        property.category,
-        property.propertyType,
-        property.listingPurpose,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(text)
-    );
-  }, [keyword, properties]);
+      try {
+        await deleteDoc(
+          doc(
+            db,
+            'properties',
+            property.id
+          )
+        );
 
-  const handleDelete = async (id: string, title: string) => {
-    const confirmed = window.confirm(`Delete "${title}"? This cannot be undone.`);
+        setProperties(
+          (
+            current
+          ) =>
+            current.filter(
+              (
+                item
+              ) =>
+                item.id !==
+                property.id
+            )
+        );
+      } catch (error) {
+        console.error(
+          'Failed to delete property:',
+          error
+        );
 
-    if (!confirmed) return;
+        window.alert(
+          'The property could not be deleted.'
+        );
+      }
+    };
 
-    try {
-      await deleteDoc(doc(db, 'properties', id));
-      setProperties((current) => current.filter((property) => property.id !== id));
-    } catch (error) {
-      console.error('Error deleting property:', error);
-      alert('Could not delete property. Please try again.');
-    }
-  };
+  const getServiceIcon =
+    (
+      service:
+        PropertyRecord['serviceType']
+    ) => {
+      if (
+        service ===
+        'hostel'
+      ) {
+        return BedDouble;
+      }
+
+      if (
+        service ===
+        'shortlet'
+      ) {
+        return MoonStar;
+      }
+
+      return Building2;
+    };
+
+  const getStatusIcon =
+    (
+      status:
+        PropertyRecord['lifecycleStatus']
+    ) => {
+      if (
+        status ===
+        'published'
+      ) {
+        return Eye;
+      }
+
+      if (
+        status ===
+        'archived'
+      ) {
+        return Archive;
+      }
+
+      return FileEdit;
+    };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
+    <div
+      className={
+        styles.page
+      }
+    >
+      <div
+        className={
+          styles.header
+        }
+      >
         <div>
-          <span>Property Management</span>
-          <h1>Manage Properties</h1>
-          <p>Add, edit, delete and review all Living Springs listings.</p>
+          <span>
+            Living Spring Admin
+          </span>
+
+          <h1>
+            Properties &
+            Accommodation
+          </h1>
+
+          <p>
+            Manage property,
+            hostel and short-let
+            listings from one
+            place.
+          </p>
         </div>
 
-        <Link href="/admin/properties/new" className={styles.addBtn}>
-          <PlusCircle size={18} />
-          Add Property
+        <Link
+          href="/admin/properties/new"
+          className={
+            styles.addButton
+          }
+        >
+          <Plus
+            size={18}
+          />
+
+          Add Listing
         </Link>
       </div>
 
-      <div className={styles.toolbar}>
-        <div className={styles.searchBox}>
-          <Search size={18} />
+      <div
+        className={
+          styles.toolbar
+        }
+      >
+        <div
+          className={
+            styles.search
+          }
+        >
+          <Search
+            size={17}
+          />
+
           <input
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            placeholder="Search by title, location, category..."
+            value={
+              keyword
+            }
+            onChange={(
+              event
+            ) =>
+              setKeyword(
+                event.target
+                  .value
+              )
+            }
+            placeholder="Search listings..."
           />
         </div>
 
-        <div className={styles.count}>
-          {filteredProperties.length} property
-          {filteredProperties.length === 1 ? '' : 'ies'}
-        </div>
+        <select
+          value={
+            serviceFilter
+          }
+          onChange={(
+            event
+          ) =>
+            setServiceFilter(
+              event.target
+                .value
+            )
+          }
+        >
+          <option value="all">
+            All Types
+          </option>
+
+          <option value="property">
+            Properties
+          </option>
+
+          <option value="hostel">
+            Hostel
+          </option>
+
+          <option value="shortlet">
+            Short-Let
+          </option>
+        </select>
+
+        <select
+          value={
+            statusFilter
+          }
+          onChange={(
+            event
+          ) =>
+            setStatusFilter(
+              event.target
+                .value
+            )
+          }
+        >
+          <option value="all">
+            All Statuses
+          </option>
+
+          <option value="published">
+            Published
+          </option>
+
+          <option value="draft">
+            Draft
+          </option>
+
+          <option value="archived">
+            Archived
+          </option>
+        </select>
+      </div>
+
+      <div
+        className={
+          styles.resultsBar
+        }
+      >
+        <span>
+          {
+            filtered.length
+          }{' '}
+
+          {filtered.length ===
+          1
+            ? 'listing'
+            : 'listings'}
+        </span>
       </div>
 
       {loading ? (
-        <div className="loading">
-          <div className="loading-spinner" />
+        <div
+          className={
+            styles.loading
+          }
+        >
+          <div
+            className="loading-spinner"
+          />
         </div>
-      ) : filteredProperties.length ? (
-        <div className={styles.tableCard}>
-          <div className={styles.table}>
-            <div className={styles.tableHead}>
-              <span>Property</span>
-              <span>Category</span>
-              <span>Units</span>
-              <span>Status</span>
-              <span>Actions</span>
-            </div>
+      ) : filtered.length >
+        0 ? (
+        <div
+          className={
+            styles.list
+          }
+        >
+          {filtered.map(
+            (
+              property
+            ) => {
+              const ServiceIcon =
+                getServiceIcon(
+                  property.serviceType
+                );
 
-            {filteredProperties.map((property) => {
-              const units = property.units || [];
-              const available = units.filter((unit: any) => unit.status === 'available').length;
+              const StatusIcon =
+                getStatusIcon(
+                  property.lifecycleStatus
+                );
+
+              const availableUnits =
+                property.units.filter(
+                  (
+                    unit
+                  ) =>
+                    unit.status ===
+                    'available'
+                ).length;
 
               return (
-                <div className={styles.tableRow} key={property.id}>
-                  <div className={styles.propertyCell}>
-                    <div className={styles.thumb}>
-                      {property.media?.[0] ? (
-                        <img src={property.media[0]} alt={property.title} />
-                      ) : (
-                        <span>LS</span>
-                      )}
-                    </div>
+                <article
+                  className={
+                    styles.listingCard
+                  }
+                  key={
+                    property.id
+                  }
+                >
+                  <div
+                    className={
+                      styles.media
+                    }
+                  >
+                    {property.coverImage ? (
+                      // Arbitrary legacy/admin URLs
+                      // are still supported until
+                      // storage is standardized.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={
+                          property.coverImage
+                        }
+                        alt={
+                          property.title
+                        }
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div
+                        className={
+                          styles.mediaFallback
+                        }
+                      >
+                        <ServiceIcon
+                          size={30}
+                        />
+                      </div>
+                    )}
 
-                    <div>
-                      <strong>
-                        {property.featured && <Star size={15} fill="currentColor" />}
-                        {property.title}
-                      </strong>
-                      <small>{property.location || 'Location not set'}</small>
-                    </div>
+                    {property.featured && (
+                      <span
+                        className={
+                          styles.featured
+                        }
+                      >
+                        <Star
+                          size={13}
+                          fill="currentColor"
+                        />
+
+                        Featured
+                      </span>
+                    )}
                   </div>
 
-                  <div>
-                    <strong>{property.category || 'Property'}</strong>
-                    <small>{property.listingPurpose || 'Rent'}</small>
-                  </div>
-
-                  <div>
-                    <strong>{units.length}</strong>
-                    <small>{available} available</small>
-                  </div>
-
-                  <div>
-                    <span className={available ? styles.available : styles.unavailable}>
-                      {available ? 'Available' : 'Unavailable'}
-                    </span>
-                  </div>
-
-                  <div className={styles.actions}>
-                    <Link href={`/properties/${property.id}`} target="_blank" title="View">
-                      <Eye size={17} />
-                    </Link>
-
-                    <Link href={`/admin/properties/edit/${property.id}`} title="Edit">
-  <Edit size={17} />
-</Link>
-
-                    <button
-                      type="button"
-                      title="Delete"
-                      onClick={() => handleDelete(property.id, property.title)}
+                  <div
+                    className={
+                      styles.content
+                    }
+                  >
+                    <div
+                      className={
+                        styles.badges
+                      }
                     >
-                      <Trash2 size={17} />
-                    </button>
+                      <span
+                        className={
+                          styles.serviceBadge
+                        }
+                      >
+                        <ServiceIcon
+                          size={14}
+                        />
+
+                        {formatPropertyService(
+                          property.serviceType
+                        )}
+                      </span>
+
+                      <span
+                        className={`${styles.statusBadge} ${
+                          styles[
+                            property.lifecycleStatus
+                          ]
+                        }`}
+                      >
+                        <StatusIcon
+                          size={14}
+                        />
+
+                        {formatLifecycleStatus(
+                          property.lifecycleStatus
+                        )}
+                      </span>
+                    </div>
+
+                    <h2>
+                      {property.title ||
+                        'Untitled Listing'}
+                    </h2>
+
+                    <p
+                      className={
+                        styles.location
+                      }
+                    >
+                      {property.location ||
+                        'Location not set'}
+                    </p>
+
+                    <div
+                      className={
+                        styles.stats
+                      }
+                    >
+                      <span>
+                        <strong>
+                          {
+                            property.units.length
+                          }
+                        </strong>
+
+                        Units
+                      </span>
+
+                      <span>
+                        <strong>
+                          {
+                            availableUnits
+                          }
+                        </strong>
+
+                        Available
+                      </span>
+
+                      <span>
+                        <strong>
+                          {property.propertyType ||
+                            '—'}
+                        </strong>
+
+                        Type
+                      </span>
+                    </div>
+
+                    <div
+                      className={
+                        styles.actions
+                      }
+                    >
+                      {property.lifecycleStatus ===
+                        'published' && (
+                        <Link
+                          href={`/properties/${property.id}`}
+                          target="_blank"
+                        >
+                          <Eye
+                            size={16}
+                          />
+
+                          View
+                        </Link>
+                      )}
+
+                      <Link
+                        href={`/admin/properties/edit/${property.id}`}
+                      >
+                        <Edit
+                          size={16}
+                        />
+
+                        Edit
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void deleteProperty(
+                            property
+                          )
+                        }
+                      >
+                        <Trash2
+                          size={16}
+                        />
+
+                        Delete
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </article>
               );
-            })}
-          </div>
+            }
+          )}
         </div>
       ) : (
-        <div className={styles.empty}>
-          <h2>No properties found</h2>
-          <p>Create a new listing or adjust your search keyword.</p>
-          <Link href="/admin/properties/new" className={styles.addBtn}>
-            <PlusCircle size={18} />
-            Add Property
+        <div
+          className={
+            styles.empty
+          }
+        >
+          <Building2
+            size={34}
+          />
+
+          <h2>
+            No listings found
+          </h2>
+
+          <p>
+            Adjust your filters
+            or create a new
+            Living Spring
+            listing.
+          </p>
+
+          <Link
+            href="/admin/properties/new"
+            className={
+              styles.addButton
+            }
+          >
+            <Plus
+              size={18}
+            />
+
+            Add Listing
           </Link>
         </div>
       )}
