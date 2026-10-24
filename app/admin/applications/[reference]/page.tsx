@@ -1577,179 +1577,278 @@ AdminApplicationDetailPage() {
           />
 
 
-          <section
-            className={
-              styles.decisionCard
-            }
-          >
-            <div
+          {record.reviewStatus
+            .trim()
+            .toUpperCase() ===
+          'APPROVED' ? (
+            <section
               className={
-                styles.sideTitle
+                styles.decisionCard
               }
             >
-              <ShieldCheck
-                size={19}
-              />
-
-              <h2>
-                Review decision
-              </h2>
-            </div>
-
-            <label>
-              Admin Notes
-
-              <textarea
-                rows={6}
-                value={
-                  notes
-                }
-                onChange={(
-                  event
-                ) =>
-                  setNotes(
-                    event.target
-                      .value
-                  )
-                }
-                placeholder="Explain required changes or rejection reason..."
-              />
-            </label>
-
-
-            {decisionMode ? (
               <div
                 className={
-                  styles.confirmBox
+                  styles.sideTitle
                 }
               >
+                <ShieldCheck
+                  size={19}
+                />
+
+                <h2>
+                  Review completed
+                </h2>
+              </div>
+
+              <div
+                className={
+                  styles.paymentRow
+                }
+              >
+                <span>
+                  Application
+                </span>
+
                 <strong>
-                  {decisionMode ===
-                  'approve'
-                    ? 'Approve this application?'
-                    : decisionMode ===
-                        'needs_changes'
-                      ? 'Send change request?'
-                      : 'Reject this application?'}
+                  APPROVED ✓
                 </strong>
+              </div>
 
-                <p>
-                  An email will be
-                  sent to the
-                  applicant.
-                </p>
+              <div
+                className={
+                  styles.paymentRow
+                }
+              >
+                <span>
+                  Payment
+                </span>
 
+                <strong>
+                  {record.paymentStatus ||
+                    'NOT REQUESTED'}
+                </strong>
+              </div>
+
+              <div
+                className={
+                  styles.paymentRow
+                }
+              >
+                <span>
+                  Publication
+                </span>
+
+                <strong>
+                  {String(
+                    record.published ||
+                    ''
+                  )
+                    .trim()
+                    .toUpperCase() ===
+                  'YES'
+                    ? 'PUBLISHED ✓'
+                    : 'NOT PUBLISHED'}
+                </strong>
+              </div>
+
+              <small
+                className={
+                  styles.paymentNote
+                }
+              >
+                {String(
+                  record.published ||
+                  ''
+                )
+                  .trim()
+                  .toUpperCase() ===
+                'YES'
+                  ? 'Review is complete. Payment was verified and the listing has been published. Future advert lifecycle actions are managed from Properties.'
+                  : String(
+                      record.paymentStatus ||
+                      ''
+                    )
+                      .trim()
+                      .toUpperCase() ===
+                    'PAID'
+                    ? 'Review and payment are complete. Use the Publication section above to publish this listing.'
+                    : 'Review is complete. Waiting for verified payment before publication.'}
+              </small>
+            </section>
+          ) : (
+            <section
+              className={
+                styles.decisionCard
+              }
+            >
+              <div
+                className={
+                  styles.sideTitle
+                }
+              >
+                <ShieldCheck
+                  size={19}
+                />
+
+                <h2>
+                  Review decision
+                </h2>
+              </div>
+
+              <label>
+                Admin Notes
+
+                <textarea
+                  rows={6}
+                  value={
+                    notes
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setNotes(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Explain required changes or rejection reason..."
+                />
+              </label>
+
+              {decisionMode ? (
                 <div
                   className={
-                    styles.confirmActions
+                    styles.confirmBox
+                  }
+                >
+                  <strong>
+                    {decisionMode ===
+                    'approve'
+                      ? 'Approve this application?'
+                      : decisionMode ===
+                          'needs_changes'
+                        ? 'Send change request?'
+                        : 'Reject this application?'}
+                  </strong>
+
+                  <p>
+                    An email will be
+                    sent to the
+                    applicant.
+                  </p>
+
+                  <div
+                    className={
+                      styles.confirmActions
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDecisionMode(
+                          ''
+                        )
+                      }
+                      disabled={
+                        saving
+                      }
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      className={
+                        styles
+                          .confirmDecision
+                      }
+                      onClick={() =>
+                        void decide(
+                          decisionMode
+                        )
+                      }
+                      disabled={
+                        saving
+                      }
+                    >
+                      {saving
+                        ? 'Saving...'
+                        : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={
+                    styles.decisionActions
                   }
                 >
                   <button
                     type="button"
+                    className={
+                      styles.approveButton
+                    }
                     onClick={() =>
                       setDecisionMode(
-                        ''
+                        'approve'
                       )
                     }
                     disabled={
                       saving
                     }
                   >
-                    Cancel
+                    <CheckCircle2
+                      size={17}
+                    />
+
+                    Approve
                   </button>
 
                   <button
                     type="button"
                     className={
-                      styles
-                        .confirmDecision
+                      styles.changesButton
                     }
                     onClick={() =>
-                      void decide(
-                        decisionMode
+                      setDecisionMode(
+                        'needs_changes'
                       )
                     }
                     disabled={
                       saving
                     }
                   >
-                    {saving
-                      ? 'Saving...'
-                      : 'Confirm'}
+                    <FileWarning
+                      size={17}
+                    />
+
+                    Needs Changes
+                  </button>
+
+                  <button
+                    type="button"
+                    className={
+                      styles.rejectButton
+                    }
+                    onClick={() =>
+                      setDecisionMode(
+                        'reject'
+                      )
+                    }
+                    disabled={
+                      saving
+                    }
+                  >
+                    <XCircle
+                      size={17}
+                    />
+
+                    Reject
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div
-                className={
-                  styles.decisionActions
-                }
-              >
-                <button
-                  type="button"
-                  className={
-                    styles.approveButton
-                  }
-                  onClick={() =>
-                    setDecisionMode(
-                      'approve'
-                    )
-                  }
-                  disabled={
-                    saving
-                  }
-                >
-                  <CheckCircle2
-                    size={17}
-                  />
-
-                  Approve
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    styles.changesButton
-                  }
-                  onClick={() =>
-                    setDecisionMode(
-                      'needs_changes'
-                    )
-                  }
-                  disabled={
-                    saving
-                  }
-                >
-                  <FileWarning
-                    size={17}
-                  />
-
-                  Needs Changes
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    styles.rejectButton
-                  }
-                  onClick={() =>
-                    setDecisionMode(
-                      'reject'
-                    )
-                  }
-                  disabled={
-                    saving
-                  }
-                >
-                  <XCircle
-                    size={17}
-                  />
-
-                  Reject
-                </button>
-              </div>
-            )}
-          </section>
+              )}
+            </section>
+          )}
         </aside>
       </div>
     </div>

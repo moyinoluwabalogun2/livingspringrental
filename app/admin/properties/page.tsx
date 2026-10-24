@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -13,14 +14,19 @@ import {
   Archive,
   BedDouble,
   Building2,
+  CalendarClock,
+  CalendarX2,
   Edit,
   Eye,
   FileEdit,
   MoonStar,
   Plus,
+  RefreshCw,
+  RotateCcw,
   Search,
   Star,
   Trash2,
+  WalletCards,
 } from 'lucide-react';
 
 import {
@@ -30,6 +36,8 @@ import {
   getDocs,
   limit,
   query,
+  serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore';
 
 import {
@@ -37,16 +45,101 @@ import {
 } from '@/lib/firebase';
 
 import {
-  formatLifecycleStatus,
+  formatEffectiveListingStatus,
+  formatListingSource,
   formatPropertyService,
+  getDaysRemaining,
+  getEffectiveListingStatus,
+  getPropertyExpiresAt,
+  getTotalAvailableUnits,
+  isPublicProperty,
   normalizeProperty,
+  type EffectiveListingStatus,
   type PropertyRecord,
 } from '@/lib/property';
 
 import styles
   from './page.module.css';
 
-export default function AdminPropertiesPage() {
+
+function formatDate(
+  value:
+    Date | null
+) {
+  if (
+    !value
+  ) {
+    return '—';
+  }
+
+  return new Intl.DateTimeFormat(
+    'en-NG',
+    {
+      day:
+        'numeric',
+
+      month:
+        'short',
+
+      year:
+        'numeric',
+    }
+  ).format(
+    value
+  );
+}
+
+
+function statusStyle(
+  status:
+    EffectiveListingStatus
+):
+React.CSSProperties {
+  if (
+    status ===
+    'live'
+  ) {
+    return {};
+  }
+
+  if (
+    status ===
+    'expiring'
+  ) {
+    return {
+      background:
+        '#fff3cd',
+
+      color:
+        '#8a5a00',
+
+      borderColor:
+        '#edd78b',
+    };
+  }
+
+  if (
+    status ===
+    'expired'
+  ) {
+    return {
+      background:
+        '#fff0f0',
+
+      color:
+        '#a43232',
+
+      borderColor:
+        '#efc2c2',
+    };
+  }
+
+  return {};
+}
+
+
+export default function
+AdminPropertiesPage() {
   const [
     properties,
     setProperties,
@@ -60,6 +153,18 @@ export default function AdminPropertiesPage() {
     setLoading,
   ] =
     useState(true);
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] =
+    useState(false);
+
+  const [
+    busyId,
+    setBusyId,
+  ] =
+    useState('');
 
   const [
     keyword,
@@ -79,216 +184,448 @@ export default function AdminPropertiesPage() {
   ] =
     useState('all');
 
-  useEffect(() => {
-    let active =
-      true;
 
-    async function loadProperties() {
-      try {
-        /*
-         * Performance guard:
-         * admin does not need an
-         * unlimited collection read.
-         *
-         * Proper cursor pagination
-         * will be added with the
-         * larger admin work.
-         */
-        const snapshot =
-          await getDocs(
-            query(
-              collection(
-                db,
-                'properties'
-              ),
-
-              limit(100)
-            )
+  const loadProperties =
+    useCallback(
+      async (
+        quiet =
+          false
+      ) => {
+        if (
+          quiet
+        ) {
+          setRefreshing(
+            true
           );
+        } else {
+          setLoading(
+            true
+          );
+        }
 
-        const data =
-          snapshot.docs.map(
-            (
-              document
-            ) =>
-              normalizeProperty(
-                document.id,
-                document.data()
+        try {
+          const snapshot =
+            await getDocs(
+              query(
+                collection(
+                  db,
+                  'properties'
+                ),
+
+                limit(
+                  100
+                )
               )
-          );
+            );
 
-        if (active) {
+          const data =
+            snapshot.docs.map(
+              (
+                document
+              ) =>
+                normalizeProperty(
+                  document.id,
+                  document.data()
+                )
+            );
+
           setProperties(
             data
           );
-        }
-      } catch (error) {
-        console.error(
-          'Failed to load properties:',
+        } catch (
           error
-        );
-      } finally {
-        if (active) {
+        ) {
+          console.error(
+            'Failed to load properties:',
+            error
+          );
+        } finally {
           setLoading(
             false
           );
-        }
-      }
-    }
 
-    void loadProperties();
-
-    return () => {
-      active =
-        false;
-    };
-  }, []);
-
-  const filtered =
-    useMemo(() => {
-      const search =
-        keyword
-          .trim()
-          .toLowerCase();
-
-      return properties.filter(
-        (
-          property
-        ) => {
-          const text =
-            [
-              property.title,
-              property.location,
-              property.address,
-              property.propertyType,
-              property.category,
-              property.listingPurpose,
-            ]
-              .join(' ')
-              .toLowerCase();
-
-          const matchesSearch =
-            !search ||
-            text.includes(
-              search
-            );
-
-          const matchesService =
-            serviceFilter ===
-              'all' ||
-            property.serviceType ===
-              serviceFilter;
-
-          const matchesStatus =
-            statusFilter ===
-              'all' ||
-            property.lifecycleStatus ===
-              statusFilter;
-
-          return (
-            matchesSearch &&
-            matchesService &&
-            matchesStatus
+          setRefreshing(
+            false
           );
         }
+      },
+      []
+    );
+
+
+  useEffect(() => {
+    const timer =
+      window.setTimeout(
+        () => {
+          void loadProperties();
+        },
+        0
       );
-    }, [
-      keyword,
-      properties,
-      serviceFilter,
-      statusFilter,
-    ]);
 
-  const deleteProperty =
-    async (
-      property:
-        PropertyRecord
-    ) => {
-      const confirmed =
-        window.confirm(
-          `Delete "${property.title}" permanently?`
-        );
+    return () => {
+      window.clearTimeout(
+        timer
+      );
+    };
+  }, [
+    loadProperties,
+  ]);
 
-      if (!confirmed) {
-        return;
-      }
 
-      try {
-        await deleteDoc(
-          doc(
-            db,
-            'properties',
-            property.id
-          )
-        );
+  const filtered =
+    useMemo(
+      () => {
+        const search =
+          keyword
+            .trim()
+            .toLowerCase();
 
-        setProperties(
+        return properties.filter(
           (
-            current
-          ) =>
-            current.filter(
-              (
-                item
-              ) =>
-                item.id !==
-                property.id
-            )
+            property
+          ) => {
+            const text =
+              [
+                property.title,
+                property.location,
+                property.address,
+                property.propertyType,
+                property.category,
+                property.listingPurpose,
+                property
+                  .sourceApplicationReference,
+              ]
+                .join(
+                  ' '
+                )
+                .toLowerCase();
+
+            const matchesSearch =
+              !search ||
+              text.includes(
+                search
+              );
+
+            const matchesService =
+              serviceFilter ===
+                'all' ||
+              property.serviceType ===
+                serviceFilter;
+
+            const effectiveStatus =
+              getEffectiveListingStatus(
+                property
+              );
+
+            const matchesStatus =
+              statusFilter ===
+                'all' ||
+              effectiveStatus ===
+                statusFilter;
+
+            return (
+              matchesSearch &&
+              matchesService &&
+              matchesStatus
+            );
+          }
         );
-      } catch (error) {
-        console.error(
-          'Failed to delete property:',
-          error
-        );
+      },
+      [
+        keyword,
+        properties,
+        serviceFilter,
+        statusFilter,
+      ]
+    );
 
-        window.alert(
-          'The property could not be deleted.'
-        );
-      }
-    };
 
-  const getServiceIcon =
-    (
-      service:
-        PropertyRecord['serviceType']
-    ) => {
-      if (
-        service ===
-        'hostel'
-      ) {
-        return BedDouble;
-      }
+  async function
+  archiveProperty(
+    property:
+      PropertyRecord
+  ) {
+    const confirmed =
+      window.confirm(
+        `Archive "${property.title}"?\n\nIt will be hidden from the public website but will remain in Admin.`
+      );
 
-      if (
-        service ===
-        'shortlet'
-      ) {
-        return MoonStar;
-      }
+    if (
+      !confirmed
+    ) {
+      return;
+    }
 
-      return Building2;
-    };
+    setBusyId(
+      property.id
+    );
 
-  const getStatusIcon =
-    (
-      status:
-        PropertyRecord['lifecycleStatus']
-    ) => {
-      if (
-        status ===
-        'published'
-      ) {
-        return Eye;
-      }
+    try {
+      await updateDoc(
+        doc(
+          db,
+          'properties',
+          property.id
+        ),
+        {
+          lifecycleStatus:
+            'archived',
 
-      if (
-        status ===
-        'archived'
-      ) {
-        return Archive;
-      }
+          archivedAt:
+            serverTimestamp(),
 
-      return FileEdit;
-    };
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      setProperties(
+        (
+          current
+        ) =>
+          current.map(
+            (
+              item
+            ) =>
+              item.id ===
+              property.id
+                ? {
+                    ...item,
+
+                    lifecycleStatus:
+                      'archived',
+                  }
+                : item
+          )
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        'Could not archive listing:',
+        error
+      );
+
+      window.alert(
+        'The listing could not be archived.'
+      );
+    } finally {
+      setBusyId(
+        ''
+      );
+    }
+  }
+
+
+  async function
+  publishDirectProperty(
+    property:
+      PropertyRecord
+  ) {
+    if (
+      property.listingSource !==
+      'living-spring'
+    ) {
+      window.alert(
+        'Partner Listings require a verified renewal payment before another advertising period can begin.'
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Publish "${property.title}" again?`
+      );
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+    setBusyId(
+      property.id
+    );
+
+    try {
+      await updateDoc(
+        doc(
+          db,
+          'properties',
+          property.id
+        ),
+        {
+          lifecycleStatus:
+            'published',
+
+          publishedAt:
+            serverTimestamp(),
+
+          updatedAt:
+            serverTimestamp(),
+        }
+      );
+
+      await loadProperties(
+        true
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        'Could not publish listing:',
+        error
+      );
+
+      window.alert(
+        'The listing could not be published.'
+      );
+    } finally {
+      setBusyId(
+        ''
+      );
+    }
+  }
+
+
+  async function
+  deleteProperty(
+    property:
+      PropertyRecord
+  ) {
+    const effectiveStatus =
+      getEffectiveListingStatus(
+        property
+      );
+
+    if (
+      effectiveStatus ===
+        'live' ||
+      effectiveStatus ===
+        'expiring'
+    ) {
+      window.alert(
+        'Archive a live listing before deleting it.'
+      );
+
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        `Delete "${property.title}" permanently?\n\nThis removes the Firestore listing. Application and payment history are not deleted.`
+      );
+
+    if (
+      !confirmed
+    ) {
+      return;
+    }
+
+    setBusyId(
+      property.id
+    );
+
+    try {
+      await deleteDoc(
+        doc(
+          db,
+          'properties',
+          property.id
+        )
+      );
+
+      setProperties(
+        (
+          current
+        ) =>
+          current.filter(
+            (
+              item
+            ) =>
+              item.id !==
+              property.id
+          )
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        'Failed to delete property:',
+        error
+      );
+
+      window.alert(
+        'The property could not be deleted.'
+      );
+    } finally {
+      setBusyId(
+        ''
+      );
+    }
+  }
+
+
+  function getServiceIcon(
+    service:
+      PropertyRecord[
+        'serviceType'
+      ]
+  ) {
+    if (
+      service ===
+      'hostel'
+    ) {
+      return BedDouble;
+    }
+
+    if (
+      service ===
+      'shortlet'
+    ) {
+      return MoonStar;
+    }
+
+    return Building2;
+  }
+
+
+  function getStatusIcon(
+    status:
+      EffectiveListingStatus
+  ) {
+    if (
+      status ===
+      'live'
+    ) {
+      return Eye;
+    }
+
+    if (
+      status ===
+      'expiring'
+    ) {
+      return CalendarClock;
+    }
+
+    if (
+      status ===
+      'expired'
+    ) {
+      return CalendarX2;
+    }
+
+    if (
+      status ===
+      'archived'
+    ) {
+      return Archive;
+    }
+
+    return FileEdit;
+  }
+
 
   return (
     <div
@@ -312,26 +649,63 @@ export default function AdminPropertiesPage() {
           </h1>
 
           <p>
-            Manage property,
-            hostel and short-let
-            listings from one
-            place.
+            Manage live adverts,
+            expiry, partner listings,
+            hostel accommodation and
+            short-lets from one place.
           </p>
         </div>
 
-        <Link
-          href="/admin/properties/new"
-          className={
-            styles.addButton
-          }
-        >
-          <Plus
-            size={18}
-          />
+        <div
+          style={{
+            display:
+              'flex',
 
-          Add Listing
-        </Link>
+            gap:
+              '10px',
+
+            flexWrap:
+              'wrap',
+          }}
+        >
+          <button
+            type="button"
+            className={
+              styles.addButton
+            }
+            disabled={
+              refreshing
+            }
+            onClick={() =>
+              void loadProperties(
+                true
+              )
+            }
+          >
+            <RefreshCw
+              size={17}
+            />
+
+            {refreshing
+              ? 'Refreshing...'
+              : 'Refresh'}
+          </button>
+
+          <Link
+            href="/admin/properties/new"
+            className={
+              styles.addButton
+            }
+          >
+            <Plus
+              size={18}
+            />
+
+            Add Listing
+          </Link>
+        </div>
       </div>
+
 
       <div
         className={
@@ -363,6 +737,7 @@ export default function AdminPropertiesPage() {
           />
         </div>
 
+
         <select
           value={
             serviceFilter
@@ -393,6 +768,7 @@ export default function AdminPropertiesPage() {
           </option>
         </select>
 
+
         <select
           value={
             statusFilter
@@ -410,8 +786,16 @@ export default function AdminPropertiesPage() {
             All Statuses
           </option>
 
-          <option value="published">
-            Published
+          <option value="live">
+            Live
+          </option>
+
+          <option value="expiring">
+            Expiring Soon
+          </option>
+
+          <option value="expired">
+            Expired
           </option>
 
           <option value="draft">
@@ -423,6 +807,7 @@ export default function AdminPropertiesPage() {
           </option>
         </select>
       </div>
+
 
       <div
         className={
@@ -440,6 +825,7 @@ export default function AdminPropertiesPage() {
             : 'listings'}
         </span>
       </div>
+
 
       {loading ? (
         <div
@@ -467,19 +853,43 @@ export default function AdminPropertiesPage() {
                   property.serviceType
                 );
 
+              const effectiveStatus =
+                getEffectiveListingStatus(
+                  property
+                );
+
               const StatusIcon =
                 getStatusIcon(
-                  property.lifecycleStatus
+                  effectiveStatus
                 );
 
               const availableUnits =
-                property.units.filter(
-                  (
-                    unit
-                  ) =>
-                    unit.status ===
-                    'available'
-                ).length;
+                getTotalAvailableUnits(
+                  property
+                );
+
+              const expiresAt =
+                getPropertyExpiresAt(
+                  property
+                );
+
+              const daysRemaining =
+                getDaysRemaining(
+                  property
+                );
+
+              const publicVisible =
+                isPublicProperty(
+                  property
+                );
+
+              const isPartner =
+                property.listingSource ===
+                'partner';
+
+              const busy =
+                busyId ===
+                property.id;
 
               return (
                 <article
@@ -496,9 +906,6 @@ export default function AdminPropertiesPage() {
                     }
                   >
                     {property.coverImage ? (
-                      // Arbitrary legacy/admin URLs
-                      // are still supported until
-                      // storage is standardized.
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={
@@ -538,6 +945,7 @@ export default function AdminPropertiesPage() {
                     )}
                   </div>
 
+
                   <div
                     className={
                       styles.content
@@ -562,27 +970,53 @@ export default function AdminPropertiesPage() {
                         )}
                       </span>
 
+
+                      <span
+                        className={
+                          styles.serviceBadge
+                        }
+                      >
+                        {formatListingSource(
+                          property.listingSource
+                        )}
+                      </span>
+
+
                       <span
                         className={`${styles.statusBadge} ${
-                          styles[
-                            property.lifecycleStatus
-                          ]
+                          effectiveStatus ===
+                            'live'
+                            ? styles
+                                .published
+                            : effectiveStatus ===
+                                'archived'
+                              ? styles
+                                  .archived
+                              : styles
+                                  .draft
                         }`}
+                        style={
+                          statusStyle(
+                            effectiveStatus
+                          )
+                        }
                       >
                         <StatusIcon
                           size={14}
                         />
 
-                        {formatLifecycleStatus(
-                          property.lifecycleStatus
+                        {formatEffectiveListingStatus(
+                          effectiveStatus
                         )}
                       </span>
                     </div>
+
 
                     <h2>
                       {property.title ||
                         'Untitled Listing'}
                     </h2>
+
 
                     <p
                       className={
@@ -593,6 +1027,60 @@ export default function AdminPropertiesPage() {
                         'Location not set'}
                     </p>
 
+
+                    {isPartner &&
+                      expiresAt && (
+                      <div
+                        style={{
+                          margin:
+                            '12px 0',
+
+                          padding:
+                            '12px 14px',
+
+                          borderRadius:
+                            '12px',
+
+                          background:
+                            effectiveStatus ===
+                            'expired'
+                              ? '#fff0f0'
+                              : effectiveStatus ===
+                                  'expiring'
+                                ? '#fff7df'
+                                : '#f7f4ec',
+
+                          fontSize:
+                            '0.83rem',
+
+                          lineHeight:
+                            1.55,
+                        }}
+                      >
+                        <strong>
+                          {effectiveStatus ===
+                          'expired'
+                            ? 'Advert expired'
+                            : `Expires ${formatDate(
+                                expiresAt
+                              )}`}
+                        </strong>
+
+                        <br />
+
+                        {effectiveStatus ===
+                        'expired'
+                          ? 'This Partner Listing is no longer publicly visible.'
+                          : `${daysRemaining ?? 0} ${
+                              daysRemaining ===
+                              1
+                                ? 'day'
+                                : 'days'
+                            } remaining in this advertising period.`}
+                      </div>
+                    )}
+
+
                     <div
                       className={
                         styles.stats
@@ -601,11 +1089,12 @@ export default function AdminPropertiesPage() {
                       <span>
                         <strong>
                           {
-                            property.units.length
+                            property.units
+                              .length
                           }
                         </strong>
 
-                        Units
+                        Unit Types
                       </span>
 
                       <span>
@@ -628,13 +1117,13 @@ export default function AdminPropertiesPage() {
                       </span>
                     </div>
 
+
                     <div
                       className={
                         styles.actions
                       }
                     >
-                      {property.lifecycleStatus ===
-                        'published' && (
+                      {publicVisible && (
                         <Link
                           href={`/properties/${property.id}`}
                           target="_blank"
@@ -647,6 +1136,7 @@ export default function AdminPropertiesPage() {
                         </Link>
                       )}
 
+
                       <Link
                         href={`/admin/properties/edit/${property.id}`}
                       >
@@ -657,20 +1147,115 @@ export default function AdminPropertiesPage() {
                         Edit
                       </Link>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void deleteProperty(
-                            property
-                          )
-                        }
-                      >
-                        <Trash2
-                          size={16}
-                        />
 
-                        Delete
-                      </button>
+                      {(effectiveStatus ===
+                        'live' ||
+                        effectiveStatus ===
+                          'expiring' ||
+                        effectiveStatus ===
+                          'expired') && (
+                        <button
+                          type="button"
+                          disabled={
+                            busy
+                          }
+                          onClick={() =>
+                            void archiveProperty(
+                              property
+                            )
+                          }
+                        >
+                          <Archive
+                            size={16}
+                          />
+
+                          Archive
+                        </button>
+                      )}
+
+
+                      {(effectiveStatus ===
+                        'draft' ||
+                        effectiveStatus ===
+                          'archived') &&
+                        property
+                          .listingSource ===
+                          'living-spring' && (
+                        <button
+                          type="button"
+                          disabled={
+                            busy
+                          }
+                          onClick={() =>
+                            void publishDirectProperty(
+                              property
+                            )
+                          }
+                        >
+                          <RotateCcw
+                            size={16}
+                          />
+
+                          Publish
+                        </button>
+                      )}
+
+
+                      {effectiveStatus ===
+                        'expired' &&
+                        isPartner && (
+                        property
+                          .sourceApplicationReference ? (
+                          <Link
+                            href={`/admin/applications/${encodeURIComponent(
+                              property
+                                .sourceApplicationReference
+                            )}`}
+                          >
+                            <WalletCards
+                              size={16}
+                            />
+
+                            Renewal Payment
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            title="Partner renewal requires another verified listing payment."
+                          >
+                            <WalletCards
+                              size={16}
+                            />
+
+                            Renewal Required
+                          </button>
+                        )
+                      )}
+
+
+                      {(effectiveStatus ===
+                        'draft' ||
+                        effectiveStatus ===
+                          'archived') && (
+                        <button
+                          type="button"
+                          disabled={
+                            busy
+                          }
+                          onClick={() =>
+                            void deleteProperty(
+                              property
+                            )
+                          }
+                        >
+                          <Trash2
+                            size={16}
+                          />
+
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </article>
@@ -693,9 +1278,8 @@ export default function AdminPropertiesPage() {
           </h2>
 
           <p>
-            Adjust your filters
-            or create a new
-            Living Spring
+            Adjust your filters or
+            create a new Living Spring
             listing.
           </p>
 

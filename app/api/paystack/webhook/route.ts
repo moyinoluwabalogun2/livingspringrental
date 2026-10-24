@@ -28,6 +28,9 @@ type PaystackWebhookEvent = {
 };
 
 type PaymentMetadata = {
+  paymentPurpose?: 'initial-listing' | 'renewal' | string;
+  propertyId?: string;
+  renewalNumber?: number | string;
   applicationReference?: string;
   listingTitle?: string;
   packageId?: string;
@@ -499,64 +502,32 @@ export async function POST(
 
     const applicationReference =
       String(
-        metadata
-          .applicationReference ||
+        metadata.applicationReference ||
         ''
       )
         .trim()
         .toUpperCase();
 
     if (
-      !applicationReference ||
-      !applicationReference.startsWith(
-        'LS-'
+      !/^LS-\d{4}-\d+$/.test(
+        applicationReference
       )
     ) {
       console.error(
-        'Paystack transaction does not contain a valid Living Spring application reference.',
-        metadata
+        'Paystack transaction has an invalid application reference.'
       );
 
       return NextResponse.json(
         {
-          ok:
-            false,
-
+          ok: false,
           error:
-            'Living Spring application reference is missing.',
+            'Invalid Living Spring application reference.',
         },
-        {
-          status:
-            400,
-        }
+        { status: 400 }
       );
     }
 
-    if (
-      metadata.packageId &&
-      metadata.packageId !==
-        'standard'
-    ) {
-      console.error(
-        'Unexpected Living Spring package:',
-        metadata.packageId
-      );
-
-      return NextResponse.json(
-        {
-          ok:
-            false,
-
-          error:
-            'Incorrect advertising package.',
-        },
-        {
-          status:
-            400,
-        }
-      );
-    }
-
+    // Keep the existing application source check for both payments.
     if (
       metadata.source &&
       metadata.source !==
@@ -569,25 +540,181 @@ export async function POST(
 
       return NextResponse.json(
         {
-          ok:
-            false,
-
-          error:
-            'Incorrect transaction source.',
+          ok: false,
+          error: 'Incorrect transaction source.',
         },
+        { status: 400 }
+      );
+    }
+
+    const paymentPurpose =
+      String(
+        metadata.paymentPurpose ||
+        'initial-listing'
+      )
+        .trim()
+        .toLowerCase();
+
+    if (
+      paymentPurpose !== 'initial-listing' &&
+      paymentPurpose !== 'renewal'
+    ) {
+      return NextResponse.json(
         {
-          status:
-            400,
-        }
+          ok: false,
+          error: 'Unsupported payment purpose.',
+        },
+        { status: 400 }
       );
     }
 
     /*
-     * Transaction is confirmed.
-     *
-     * Update the matching
-     * Google Sheet application.
+     * Verify package metadata where present.
+     * Amount was independently verified with Paystack above.
      */
+    if (
+      metadata.packageFee !== undefined &&
+      metadata.packageFee !== null &&
+      Number(metadata.packageFee) !==
+        STANDARD_LISTING_FEE_KOBO / 100
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Incorrect package fee.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      metadata.durationDays !== undefined &&
+      metadata.durationDays !== null &&
+      Number(metadata.durationDays) !== 30
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Incorrect advertising duration.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (paymentPurpose === 'renewal') {
+      /*
+       * A renewal must be tied to the original property,
+       * to one renewal number, and to that renewal checkout.
+       * Never overwrite the original payment's columns.
+       */
+      const propertyId =
+        String(metadata.propertyId || '')
+          .trim()
+          .toLowerCase();
+
+      const renewalNumber =
+        Number(metadata.renewalNumber);
+
+      const expectedPropertyId =
+        `partner-${applicationReference.toLowerCase()}`;
+
+      const expectedPrefix =
+        `${applicationReference}-R${renewalNumber}-`;
+
+      if (
+        metadata.source !==
+          'living-spring-list-with-us' ||
+        metadata.packageId !==
+          'standard-renewal' ||
+        propertyId !== expectedPropertyId ||
+        !Number.isSafeInteger(renewalNumber) ||
+        renewalNumber < 1 ||
+        !paymentReference.startsWith(
+          expectedPrefix
+        )
+      ) {
+        console.error(
+          'Paystack renewal metadata validation failed:',
+          {
+            applicationReference,
+            propertyId,
+            renewalNumber,
+            paymentReference,
+          }
+        );
+
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              'Invalid renewal transaction metadata.',
+          },
+          { status: 400 }
+        );
+      }
+
+      const result =
+        await callApplicationsWebhook({
+          action:
+            'renewal-payment-confirmed',
+
+          reference:
+            applicationReference,
+
+          propertyId,
+
+          renewalNumber,
+
+          paymentReference:
+            transaction.reference,
+
+          // Renewal.gs expects amount in naira, not kobo.
+          amount:
+            transaction.amount / 100,
+
+          currency:
+            transaction.currency,
+
+          paidAt:
+            transaction.paidAt ||
+            new Date().toISOString(),
+
+          paymentChannel:
+            transaction.channel || 'paystack',
+
+          customerEmail:
+            transaction.customerEmail,
+        });
+
+      return NextResponse.json({
+        ok: true,
+        processed: true,
+        paymentPurpose: 'renewal',
+        applicationReference,
+        renewalNumber,
+        propertyId,
+        paymentReference:
+          transaction.reference,
+        result,
+      });
+    }
+
+    /*
+     * Existing initial-listing payment behavior remains intact.
+     * Old transactions without paymentPurpose are initial listings.
+     */
+    if (
+      metadata.packageId &&
+      metadata.packageId !== 'standard'
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Incorrect advertising package.',
+        },
+        { status: 400 }
+      );
+    }
 
     const result =
       await callApplicationsWebhook({
@@ -608,15 +735,13 @@ export async function POST(
 
         paidAt:
           transaction.paidAt ||
-          new Date()
-            .toISOString(),
+          new Date().toISOString(),
 
         channel:
           transaction.channel,
 
         customerEmail:
-          transaction
-            .customerEmail,
+          transaction.customerEmail,
       });
 
     return NextResponse.json({
@@ -625,6 +750,8 @@ export async function POST(
 
       processed:
         true,
+
+      paymentPurpose: 'initial-listing',
 
       applicationReference,
 

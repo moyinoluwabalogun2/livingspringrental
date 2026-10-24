@@ -228,6 +228,33 @@ export type PropertyRecord = {
 
   updatedAt?:
     unknown;
+
+  /*
+   * Advertising lifecycle metadata.
+   * Optional so old Living Spring
+   * records remain compatible.
+   */
+  publishedAt?:
+    unknown;
+
+  expiresAt?:
+    unknown;
+
+  renewedAt?:
+    unknown;
+
+  renewalCount?:
+    number;
+
+  advertisingDurationDays?:
+    number;
+
+  sourceApplicationReference?:
+    string;
+
+  /* Set by the scheduled expiry job (not by a manual archive). */
+  archivedReason?:
+    string;
 };
 
 /* =========================================
@@ -884,7 +911,394 @@ export function normalizeProperty(
 
     updatedAt:
       raw.updatedAt,
+
+    publishedAt:
+      raw.publishedAt,
+
+    expiresAt:
+      raw.expiresAt,
+
+    renewedAt:
+      raw.renewedAt,
+
+    renewalCount:
+      asNumber(
+        raw.renewalCount
+      ),
+
+    advertisingDurationDays:
+      asNumber(
+        raw.advertisingDurationDays
+      ),
+
+    sourceApplicationReference:
+      asString(
+        raw.sourceApplicationReference
+      ),
+
+    archivedReason:
+      asString(
+        raw.archivedReason
+      ),
   };
+}
+
+/* =========================================
+   ADVERTISING / EXPIRY
+========================================= */
+
+export type EffectiveListingStatus =
+  | 'draft'
+  | 'live'
+  | 'expiring'
+  | 'expired'
+  | 'archived';
+
+export function propertyDateFromUnknown(
+  value:
+    unknown
+):
+Date | null {
+  if (
+    !value
+  ) {
+    return null;
+  }
+
+  if (
+    value instanceof
+    Date
+  ) {
+    return Number.isNaN(
+      value.getTime()
+    )
+      ? null
+      : value;
+  }
+
+  if (
+    typeof value ===
+      'string' ||
+    typeof value ===
+      'number'
+  ) {
+    const parsed =
+      new Date(
+        value
+      );
+
+    return Number.isNaN(
+      parsed.getTime()
+    )
+      ? null
+      : parsed;
+  }
+
+  if (
+    typeof value ===
+      'object' &&
+    value !==
+      null
+  ) {
+    const timestamp =
+      value as {
+        toDate?:
+          () => Date;
+
+        seconds?:
+          number;
+
+        _seconds?:
+          number;
+      };
+
+    if (
+      typeof timestamp
+        .toDate ===
+      'function'
+    ) {
+      try {
+        const parsed =
+          timestamp.toDate();
+
+        return Number.isNaN(
+          parsed.getTime()
+        )
+          ? null
+          : parsed;
+      } catch {
+        return null;
+      }
+    }
+
+    const seconds =
+      typeof timestamp
+        .seconds ===
+      'number'
+        ? timestamp.seconds
+        : typeof timestamp
+              ._seconds ===
+            'number'
+          ? timestamp
+              ._seconds
+          : null;
+
+    if (
+      seconds !==
+      null
+    ) {
+      return new Date(
+        seconds *
+        1000
+      );
+    }
+  }
+
+  return null;
+}
+
+export function getPropertyPublishedAt(
+  property:
+    Pick<
+      PropertyRecord,
+      'publishedAt'
+    >
+) {
+  return propertyDateFromUnknown(
+    property.publishedAt
+  );
+}
+
+export function getPropertyExpiresAt(
+  property:
+    Pick<
+      PropertyRecord,
+      'expiresAt'
+    >
+) {
+  return propertyDateFromUnknown(
+    property.expiresAt
+  );
+}
+
+export function isTimedPartnerListing(
+  property:
+    Pick<
+      PropertyRecord,
+      | 'listingSource'
+      | 'expiresAt'
+    >
+) {
+  return (
+    property.listingSource ===
+      'partner' &&
+    Boolean(
+      getPropertyExpiresAt(
+        property
+      )
+    )
+  );
+}
+
+export function getDaysRemaining(
+  property:
+    Pick<
+      PropertyRecord,
+      'expiresAt'
+    >,
+
+  now =
+    new Date()
+): number | null {
+  const expiresAt =
+    getPropertyExpiresAt(
+      property
+    );
+
+  if (
+    !expiresAt
+  ) {
+    return null;
+  }
+
+  const difference =
+    expiresAt.getTime() -
+    now.getTime();
+
+  if (
+    difference <=
+    0
+  ) {
+    return 0;
+  }
+
+  return Math.ceil(
+    difference /
+    (
+      24 *
+      60 *
+      60 *
+      1000
+    )
+  );
+}
+
+export function isPropertyExpired(
+  property:
+    Pick<
+      PropertyRecord,
+      | 'lifecycleStatus'
+      | 'listingSource'
+      | 'expiresAt'
+    >,
+
+  now =
+    new Date()
+) {
+  if (
+    property.lifecycleStatus !==
+    'published'
+  ) {
+    return false;
+  }
+
+  if (
+    property.listingSource !==
+    'partner'
+  ) {
+    return false;
+  }
+
+  const expiresAt =
+    getPropertyExpiresAt(
+      property
+    );
+
+  if (
+    !expiresAt
+  ) {
+    /*
+     * Legacy partner listings
+     * created before timed adverts
+     * remain visible until Admin
+     * explicitly changes them.
+     */
+    return false;
+  }
+
+  return (
+    expiresAt.getTime() <=
+    now.getTime()
+  );
+}
+
+export function getEffectiveListingStatus(
+  property:
+    Pick<
+      PropertyRecord,
+      | 'lifecycleStatus'
+      | 'listingSource'
+      | 'expiresAt'
+      | 'archivedReason'
+    >,
+
+  now =
+    new Date()
+):
+EffectiveListingStatus {
+  if (
+    property.lifecycleStatus ===
+    'archived'
+  ) {
+    /*
+     * Automatic expiry archives the listing in Firestore so
+     * public reads are denied, but Admin must still show EXPIRED
+     * and keep the renewal-payment action available.
+     */
+    if (
+      property.listingSource === 'partner' &&
+      property.archivedReason === 'expired' &&
+      (getPropertyExpiresAt(property)?.getTime() ?? Infinity) <=
+        now.getTime()
+    ) {
+      return 'expired';
+    }
+
+    return 'archived';
+  }
+
+  if (
+    property.lifecycleStatus ===
+    'draft'
+  ) {
+    return 'draft';
+  }
+
+  if (
+    isPropertyExpired(
+      property,
+      now
+    )
+  ) {
+    return 'expired';
+  }
+
+  if (
+    property.listingSource ===
+    'partner'
+  ) {
+    const daysRemaining =
+      getDaysRemaining(
+        property,
+        now
+      );
+
+    if (
+      daysRemaining !==
+        null &&
+      daysRemaining <=
+        7
+    ) {
+      return 'expiring';
+    }
+  }
+
+  return 'live';
+}
+
+export function formatEffectiveListingStatus(
+  status:
+    EffectiveListingStatus
+) {
+  if (
+    status ===
+    'live'
+  ) {
+    return 'Live';
+  }
+
+  if (
+    status ===
+    'expiring'
+  ) {
+    return 'Expiring Soon';
+  }
+
+  if (
+    status ===
+    'expired'
+  ) {
+    return 'Expired';
+  }
+
+  if (
+    status ===
+    'archived'
+  ) {
+    return 'Archived';
+  }
+
+  return 'Draft';
 }
 
 /* =========================================
@@ -895,12 +1309,20 @@ export function isPublicProperty(
   property:
     Pick<
       PropertyRecord,
-      'lifecycleStatus'
+      | 'lifecycleStatus'
+      | 'listingSource'
+      | 'expiresAt'
     >
 ) {
-  return (
-    property.lifecycleStatus ===
+  if (
+    property.lifecycleStatus !==
     'published'
+  ) {
+    return false;
+  }
+
+  return !isPropertyExpired(
+    property
   );
 }
 

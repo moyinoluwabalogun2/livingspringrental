@@ -1,6 +1,13 @@
 const PAYSTACK_BASE_URL =
   'https://api.paystack.co';
 
+
+/*
+ * =========================================================
+ * LIVING SPRING PRICING
+ * =========================================================
+ */
+
 export const STANDARD_LISTING_FEE_NAIRA =
   20_000;
 
@@ -8,6 +15,26 @@ export const STANDARD_LISTING_FEE_KOBO =
   STANDARD_LISTING_FEE_NAIRA *
   100;
 
+export const STANDARD_LISTING_DURATION_DAYS =
+  30;
+
+
+/*
+ * =========================================================
+ * PAYMENT PURPOSE
+ * =========================================================
+ */
+
+export type LivingSpringPaymentPurpose =
+  | 'initial-listing'
+  | 'renewal';
+
+
+/*
+ * =========================================================
+ * INITIAL LISTING INPUT
+ * =========================================================
+ */
 
 type InitializePaystackPaymentInput = {
   email:
@@ -20,6 +47,36 @@ type InitializePaystackPaymentInput = {
     string;
 };
 
+
+/*
+ * =========================================================
+ * RENEWAL INPUT
+ * =========================================================
+ */
+
+export type InitializePartnerRenewalPaymentInput = {
+  email:
+    string;
+
+  applicationReference:
+    string;
+
+  listingTitle:
+    string;
+
+  propertyId:
+    string;
+
+  renewalNumber:
+    number;
+};
+
+
+/*
+ * =========================================================
+ * PAYSTACK RESPONSE TYPES
+ * =========================================================
+ */
 
 type PaystackInitializeResponse = {
   status:
@@ -90,6 +147,12 @@ type PaystackVerifyResponse = {
 };
 
 
+/*
+ * =========================================================
+ * EXPORTED RESULT TYPES
+ * =========================================================
+ */
+
 export type InitializedPaystackPayment = {
   authorizationUrl:
     string;
@@ -103,6 +166,12 @@ export type InitializedPaystackPayment = {
 
 
 export type VerifiedPaystackTransaction = {
+  id:
+    number | null;
+
+  domain:
+    string;
+
   status:
     string;
 
@@ -121,6 +190,9 @@ export type VerifiedPaystackTransaction = {
   channel:
     string;
 
+  gatewayResponse:
+    string;
+
   metadata:
     unknown;
 
@@ -128,6 +200,12 @@ export type VerifiedPaystackTransaction = {
     string;
 };
 
+
+/*
+ * =========================================================
+ * CONFIG
+ * =========================================================
+ */
 
 function getPaystackSecretKey() {
   const secretKey =
@@ -147,24 +225,30 @@ function getPaystackSecretKey() {
 }
 
 
-function createPaymentReference(
-  applicationReference:
-    string
-) {
-  return `${applicationReference}-${Date.now()}`;
+function getSiteUrl() {
+  return (
+    process.env
+      .SITE_URL ||
+    'https://livingspringproperties.netlify.app'
+  )
+    .trim()
+    .replace(
+      /\/+$/,
+      ''
+    );
 }
 
 
-export async function
-initializeStandardListingPayment({
-  email,
-  applicationReference,
-  listingTitle,
-}: InitializePaystackPaymentInput):
-Promise<InitializedPaystackPayment> {
-  const secretKey =
-    getPaystackSecretKey();
+/*
+ * =========================================================
+ * VALIDATION
+ * =========================================================
+ */
 
+function normalizeEmail(
+  email:
+    string
+) {
   const cleanEmail =
     email
       .trim()
@@ -181,10 +265,132 @@ Promise<InitializedPaystackPayment> {
     );
   }
 
-  const reference =
-    createPaymentReference(
-      applicationReference
+  return cleanEmail;
+}
+
+
+function normalizeApplicationReference(
+  reference:
+    string
+) {
+  const cleanReference =
+    reference
+      .trim()
+      .toUpperCase();
+
+  if (
+    !/^LS-\d{4}-\d+$/.test(
+      cleanReference
+    )
+  ) {
+    throw new Error(
+      'INVALID_APPLICATION_REFERENCE'
     );
+  }
+
+  return cleanReference;
+}
+
+
+function normalizePropertyId(
+  propertyId:
+    string,
+
+  applicationReference:
+    string
+) {
+  const cleanPropertyId =
+    propertyId
+      .trim()
+      .toLowerCase();
+
+  const expectedPropertyId =
+    `partner-${applicationReference.toLowerCase()}`;
+
+  if (
+    cleanPropertyId !==
+    expectedPropertyId
+  ) {
+    throw new Error(
+      'INVALID_PARTNER_PROPERTY_ID'
+    );
+  }
+
+  return cleanPropertyId;
+}
+
+
+/*
+ * =========================================================
+ * REFERENCES
+ * =========================================================
+ */
+
+function createInitialPaymentReference(
+  applicationReference:
+    string
+) {
+  return `${applicationReference}-${Date.now()}`;
+}
+
+
+function createRenewalPaymentReference(
+  applicationReference:
+    string,
+
+  renewalNumber:
+    number
+) {
+  const cleanRenewalNumber =
+    Math.max(
+      1,
+      Math.floor(
+        Number(
+          renewalNumber
+        ) ||
+        1
+      )
+    );
+
+  return `${applicationReference}-R${cleanRenewalNumber}-${Date.now()}`;
+}
+
+
+/*
+ * =========================================================
+ * INITIALIZE HELPER
+ * =========================================================
+ */
+
+async function initializeTransaction({
+  email,
+  reference,
+  metadata,
+}: {
+  email:
+    string;
+
+  reference:
+    string;
+
+  metadata:
+    Record<
+      string,
+      unknown
+    >;
+}):
+Promise<InitializedPaystackPayment> {
+  const secretKey =
+    getPaystackSecretKey();
+
+  const siteUrl =
+    getSiteUrl();
+
+  const callbackUrl =
+    `${siteUrl}/payment/callback`;
+
+  const cancelUrl =
+    `${siteUrl}/properties`;
 
   const response =
     await fetch(
@@ -203,8 +409,7 @@ Promise<InitializedPaystackPayment> {
 
         body:
           JSON.stringify({
-            email:
-              cleanEmail,
+            email,
 
             amount:
               String(
@@ -216,26 +421,15 @@ Promise<InitializedPaystackPayment> {
 
             reference,
 
+            callback_url:
+              callbackUrl,
+
             metadata:
               JSON.stringify({
-                applicationReference,
+                ...metadata,
 
-                listingTitle,
-
-                packageId:
-                  'standard',
-
-                packageName:
-                  'Standard Listing',
-
-                packageFee:
-                  STANDARD_LISTING_FEE_NAIRA,
-
-                durationDays:
-                  30,
-
-                source:
-                  'living-spring-list-with-us',
+                cancel_action:
+                  cancelUrl,
               }),
           }),
 
@@ -245,7 +439,9 @@ Promise<InitializedPaystackPayment> {
     );
 
   const data =
-    (await response.json()) as
+    (
+      await response.json()
+    ) as
       PaystackInitializeResponse;
 
   if (
@@ -268,7 +464,9 @@ Promise<InitializedPaystackPayment> {
     !data.data
       .authorization_url ||
     !data.data
-      .reference
+      .reference ||
+    !data.data
+      .access_code
   ) {
     throw new Error(
       'PAYSTACK_INVALID_RESPONSE'
@@ -290,6 +488,168 @@ Promise<InitializedPaystackPayment> {
   };
 }
 
+
+/*
+ * =========================================================
+ * INITIAL LISTING PAYMENT
+ * =========================================================
+ */
+
+export async function
+initializeStandardListingPayment({
+  email,
+  applicationReference,
+  listingTitle,
+}: InitializePaystackPaymentInput):
+Promise<InitializedPaystackPayment> {
+  const cleanEmail =
+    normalizeEmail(
+      email
+    );
+
+  const cleanApplicationReference =
+    normalizeApplicationReference(
+      applicationReference
+    );
+
+  const paymentReference =
+    createInitialPaymentReference(
+      cleanApplicationReference
+    );
+
+  return initializeTransaction({
+    email:
+      cleanEmail,
+
+    reference:
+      paymentReference,
+
+    metadata: {
+      paymentPurpose:
+        'initial-listing' satisfies
+          LivingSpringPaymentPurpose,
+
+      applicationReference:
+        cleanApplicationReference,
+
+      listingTitle:
+        listingTitle.trim(),
+
+      packageId:
+        'standard',
+
+      packageName:
+        'Standard Listing',
+
+      packageFee:
+        STANDARD_LISTING_FEE_NAIRA,
+
+      durationDays:
+        STANDARD_LISTING_DURATION_DAYS,
+
+      source:
+        'living-spring-list-with-us',
+    },
+  });
+}
+
+
+/*
+ * =========================================================
+ * PARTNER LISTING RENEWAL PAYMENT
+ * =========================================================
+ */
+
+export async function
+initializePartnerRenewalPayment({
+  email,
+  applicationReference,
+  listingTitle,
+  propertyId,
+  renewalNumber,
+}: InitializePartnerRenewalPaymentInput):
+Promise<InitializedPaystackPayment> {
+  const cleanEmail =
+    normalizeEmail(
+      email
+    );
+
+  const cleanApplicationReference =
+    normalizeApplicationReference(
+      applicationReference
+    );
+
+  const cleanPropertyId =
+    normalizePropertyId(
+      propertyId,
+      cleanApplicationReference
+    );
+
+  const cleanRenewalNumber =
+    Math.max(
+      1,
+      Math.floor(
+        Number(
+          renewalNumber
+        ) ||
+        1
+      )
+    );
+
+  const paymentReference =
+    createRenewalPaymentReference(
+      cleanApplicationReference,
+      cleanRenewalNumber
+    );
+
+  return initializeTransaction({
+    email:
+      cleanEmail,
+
+    reference:
+      paymentReference,
+
+    metadata: {
+      paymentPurpose:
+        'renewal' satisfies
+          LivingSpringPaymentPurpose,
+
+      applicationReference:
+        cleanApplicationReference,
+
+      propertyId:
+        cleanPropertyId,
+
+      listingTitle:
+        listingTitle.trim(),
+
+      renewalNumber:
+        cleanRenewalNumber,
+
+      packageId:
+        'standard-renewal',
+
+      packageName:
+        'Standard Listing Renewal',
+
+      packageFee:
+        STANDARD_LISTING_FEE_NAIRA,
+
+      durationDays:
+        STANDARD_LISTING_DURATION_DAYS,
+
+      source:
+        'living-spring-list-with-us',
+    },
+  });
+}
+
+
+/*
+ * =========================================================
+ * VERIFY TRANSACTION
+ * =========================================================
+ */
 
 export async function
 verifyPaystackTransaction(
@@ -332,7 +692,9 @@ Promise<VerifiedPaystackTransaction> {
     );
 
   const data =
-    (await response.json()) as
+    (
+      await response.json()
+    ) as
       PaystackVerifyResponse;
 
   if (
@@ -352,6 +714,18 @@ Promise<VerifiedPaystackTransaction> {
   }
 
   return {
+    id:
+      typeof data.data.id ===
+      'number'
+        ? data.data.id
+        : null,
+
+    domain:
+      String(
+        data.data.domain ||
+        ''
+      ),
+
     status:
       String(
         data.data.status ||
@@ -384,6 +758,13 @@ Promise<VerifiedPaystackTransaction> {
     channel:
       String(
         data.data.channel ||
+        ''
+      ),
+
+    gatewayResponse:
+      String(
+        data.data
+          .gateway_response ||
         ''
       ),
 
